@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HomePlate — Configurator Tooling Prototype (FI)</title>
+<style>
+  :root{
+    --navy:#0a1830; --navy2:#0d2340; --tab-blue:#1f8fff; --logo-navy:#1b2a4a; --logo-red:#e8472b;
+    --primary:#1a73e8; --primary-d:#155fc0; --ink:#2d3340; --muted:#6b7280; --soft:#8a94a6;
+    --line:#e3e6eb; --line2:#eef0f3; --bg:#ffffff; --panel:#f6f7f9; --ok:#1a9d57; --okbg:#e8f6ee;
+    --err:#d23b3b; --errbg:#fdecec; --chip:#f1f3f6; --link:#1a73e8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#dfe3e8}
+  .app{min-height:100vh;background:#fff;position:relative}
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:center;height:64px;padding:0 22px;border-bottom:1px solid var(--line);background:#fff}
+  .logo{display:flex;align-items:center;gap:9px;font-size:27px;font-weight:800;letter-spacing:-.5px}
+  .logo .home{color:var(--logo-navy)} .logo .plate{color:var(--logo-red)}
+  .logo .mark{width:30px;height:30px}
+  .logo .env{font-size:12px;font-weight:700;color:#9aa3b0;margin-left:8px;letter-spacing:.5px}
+  .logo .env b{color:#5b6470}
+  .user{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:15px;color:#3a4150}
+  .user .av{width:34px;height:34px;border-radius:50%;background:#152a52;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .nav{display:flex;align-items:center;height:48px;background:var(--navy)}
+  .nav a{color:#cdd6e4;font-size:15px;padding:0 26px;height:48px;display:flex;align-items:center;text-decoration:none;cursor:pointer}
+  .nav a.active{background:var(--tab-blue);color:#fff}
+  .body{display:flex;min-height:calc(100vh - 112px)}
+  .rail{width:62px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding-top:18px;gap:26px;color:#7b8494}
+  .rail svg{width:22px;height:22px}
+  /* ---------- browse: active filters ---------- */
+  .filters{width:330px;border-right:1px solid var(--line);padding:20px 22px}
+  .filters .fh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .filters .fh h2{font-size:21px;font-weight:500;margin:0;color:#3a4150}
+  .filters .fh .clr{color:var(--link);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.3px}
+  .achip{display:inline-flex;align-items:center;gap:8px;background:#e8f1fd;border:1px solid #cfe0fa;color:#1a4f93;border-radius:4px;padding:5px 10px;font-size:13px;margin-bottom:16px}
+  .achip i{cursor:pointer;font-style:normal;color:#5f86bd}
+  .fsearch{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px}
+  .fsearch input{border:0;flex:1;padding:9px 11px;font-size:14px;outline:none;color:var(--muted)}
+  .fsearch .ic{width:40px;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--line);color:#9aa3b0}
+  .hide-row{display:flex;align-items:center;gap:9px;margin-bottom:8px;font-size:15px;color:#3a4150}
+  .cbx{width:18px;height:18px;border-radius:3px;background:var(--tab-blue);display:flex;align-items:center;justify-content:center}
+  .cbx svg{width:12px;height:12px;color:#fff}
+  .filt{border-top:1px solid var(--line2);padding:14px 2px;display:flex;justify-content:space-between;align-items:center;font-size:15px;color:#3a4150}
+  .filt .cnt{color:var(--soft);font-size:13px;margin-left:5px}
+  .filt .pl{color:#9aa3b0;font-size:20px;line-height:1;cursor:pointer}
+  /* ---------- browse: main ---------- */
+  .main{flex:1;padding:30px 40px;position:relative}
+  .main h1{font-size:34px;font-weight:400;color:#3a4150;margin:0 0 20px}
+  .searchbar{display:flex;align-items:stretch;max-width:560px;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:24px}
+  .searchbar .seg{display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid var(--line);background:#fafbfc;font-size:15px;color:#3a4150;white-space:nowrap}
+  .searchbar input{border:0;flex:1;padding:11px 13px;font-size:15px;outline:none}
+  .searchbar .clr,.searchbar .bc,.searchbar .go{display:flex;align-items:center;justify-content:center;width:42px;color:#7b8494;cursor:pointer}
+  .searchbar .go{border-left:1px solid var(--line)}
+  .toolbar{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:0}
+  .toolbar .gbtn{font-size:14px;color:#9aa3b0;border:1px solid var(--line);background:#f7f8fa;border-radius:5px;padding:7px 14px;cursor:not-allowed}
+  .toolbar .actions{font-size:14px;color:#fff;background:var(--navy2);border:0;border-radius:5px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .toolbar .dl{color:var(--link);cursor:pointer}
+  .toolbar .total{margin-left:auto;font-size:14px;color:#3a4150}
+  .toolbar .vw{display:flex;gap:4px}
+  .toolbar .vw span{width:32px;height:30px;border:1px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;color:#9aa3b0;cursor:pointer}
+  .toolbar .vw span.on{border-color:var(--tab-blue);color:var(--tab-blue)}
+  table.list{width:100%;border-collapse:collapse;font-size:14px}
+  table.list th{text-align:left;padding:14px 12px;color:#5b6470;font-weight:600;border-bottom:1px solid var(--line);font-size:13px}
+  table.list td{padding:16px 12px;border-bottom:1px solid var(--line2);color:#2d3340}
+  table.list tr.prow:hover{background:#f7faff;cursor:pointer}
+  .lnk{color:var(--link);cursor:pointer}
+  .thumbsm{width:34px;height:34px}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-size:13px}
+  .status-pill .d{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .flag{display:inline-block;background:#f1ebfb;color:#7a4fc0;border:1px solid #e2d6f7;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600}
+  .pager{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:18px}
+  .pager span{width:30px;height:30px;border:1px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;color:#7b8494;cursor:pointer}
+  .pager span.on{border-color:var(--tab-blue);color:var(--tab-blue)}
+  /* ---------- product detail page ---------- */
+  .pwrap{flex:1;padding:0}
+  .phead{display:flex;gap:22px;padding:26px 36px 0}
+  .pthumb{width:96px;height:96px;border:1px solid var(--line);border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:#fbfcfd}
+  .pinfo{flex:1}
+  .pinfo h1{font-size:27px;font-weight:500;margin:0 0 6px;color:#222}
+  .pinfo .meta{font-size:14px;color:#3a4150;margin:3px 0}
+  .pinfo .meta .lnk{font-weight:500}
+  .pinfo .hm{display:inline-block;background:#f1ebfb;color:#7a4fc0;border:1px solid #e2d6f7;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;margin-left:4px}
+  .pstats{display:flex;gap:34px;align-items:flex-start;padding-top:4px}
+  .pstats .st{font-size:14px}
+  .pstats .st .k{color:#8a94a6;font-size:13px;margin-bottom:4px}
+  .pstats .st .v{font-size:19px;color:#222;font-weight:400}
+  .pstats .st .pill{background:var(--okbg);color:var(--ok);border:1px solid #bfe6cd;border-radius:4px;padding:2px 9px;font-size:13px;font-weight:600}
+  .actbtn{align-self:flex-start;background:var(--navy2);color:#fff;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .ptabs{display:flex;gap:6px;padding:22px 36px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .ptabs .pt{padding:11px 18px;font-size:15px;color:#5b6470;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;position:relative;top:1px}
+  .ptabs .pt.active{color:var(--link);background:#fff;border-color:var(--line);font-weight:500}
+  .ptabs .pt.configure{color:#fff;background:var(--primary);border-color:var(--primary);font-weight:600;display:flex;align-items:center;gap:7px}
+  .ptabs .pt.configure.active{color:#fff;background:var(--primary-d)}
+  .pcontent{padding:26px 36px 50px;display:flex;gap:40px}
+  .pcontent .left{flex:1}
+  .pcontent .right{width:340px;flex:none}
+  .acch{display:flex;align-items:center;gap:8px;font-size:24px;font-weight:500;color:#3a4150;margin:0 0 18px}
+  .attr-tools{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .attr-search{display:flex;align-items:center;border:1px solid var(--line);border-radius:6px;padding:0 10px;width:260px}
+  .attr-search input{border:0;outline:none;padding:9px 6px;font-size:14px;flex:1}
+  .pillf{border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:13px;color:#5b6470;cursor:pointer;background:#fff}
+  .pillf.on{background:#e8f1fd;border-color:#bcd6f7;color:#1a4f93}
+  .attr-add{margin-left:auto;background:var(--navy2);color:#fff;border:0;border-radius:6px;padding:8px 18px;font-size:14px;cursor:pointer}
+  table.attr{width:100%;border-collapse:collapse;font-size:15px}
+  table.attr th{text-align:left;padding:14px 8px;color:#5b6470;font-weight:600;border-bottom:1px solid var(--line);background:#fafbfc}
+  table.attr td{padding:16px 8px;border-bottom:1px solid var(--line2)}
+  .bullets h3{font-size:21px;font-weight:500;margin:0 0 14px;color:#3a4150}
+  .bullets ul{margin:0;padding-left:20px;line-height:2;color:#2d3340;font-size:15px}
+  .ph-tab{padding:40px;color:var(--muted);font-size:15px}
+  /* ---------- Buttons ---------- */
+  .btn{font-size:14px;border-radius:5px;padding:8px 16px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font-weight:500}
+  .btn:hover{background:#f7f8fa}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-d)}
+  .btn.primary[disabled]{background:#b8cdf0;border-color:#b8cdf0;cursor:not-allowed}
+  .btn.sm{padding:6px 12px;font-size:13px}
+  /* ---------- configurator shells ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(15,23,42,.42);display:none;z-index:40}
+  .scrim.show{display:block}
+  .shellA{position:fixed;z-index:50;left:50%;top:50%;transform:translate(-50%,-50%);width:1000px;max-width:96vw;height:88vh;background:#fff;border-radius:10px;box-shadow:0 30px 80px rgba(0,0,0,.35);display:none;flex-direction:column;overflow:hidden}
+  .shellB{position:fixed;z-index:50;right:0;top:0;height:100vh;width:1040px;max-width:97vw;background:#fff;box-shadow:-18px 0 60px rgba(0,0,0,.3);display:none;flex-direction:column;overflow:hidden}
+  .shellC{position:fixed;z-index:50;inset:0;background:#fff;display:none;flex-direction:column;overflow:hidden}
+  .shell.open{display:flex}
+  .mhead{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line)}
+  .mhead h3{margin:0;font-size:19px;font-weight:600}
+  .mhead .x{cursor:pointer;color:#8a94a6;font-size:22px;line-height:1;background:none;border:0}
+  .stepper{display:flex;align-items:center;padding:20px 60px 22px;background:#f8f9fb;border-bottom:1px solid var(--line)}
+  .stp{display:flex;flex-direction:column;align-items:center;gap:9px;position:relative;cursor:pointer}
+  .stp .dot{width:13px;height:13px;border-radius:50%;background:#c4ccd8;border:2px solid #c4ccd8}
+  .stp.done .dot,.stp.active .dot{background:var(--tab-blue);border-color:var(--tab-blue)}
+  .stp .lbl{font-size:14px;color:#8a94a6;white-space:nowrap}
+  .stp.active .lbl,.stp.done .lbl{color:#2d3340}
+  .stpline{flex:1;height:3px;background:#d3dae4;margin:0 4px;position:relative;top:-10px}
+  .stpline.fill{background:var(--tab-blue)}
+  .bwrap{display:flex;flex:1;min-height:0}
+  .bnav{width:236px;border-right:1px solid var(--line);background:#fafbfc;padding:18px 0}
+  .bnav .bn{display:flex;align-items:center;gap:12px;padding:13px 22px;font-size:14px;color:#5b6470;cursor:pointer;border-left:3px solid transparent}
+  .bnav .bn .n{width:22px;height:22px;border-radius:50%;background:#d3dae4;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:600}
+  .bnav .bn.active{background:#eef4fe;border-left-color:var(--tab-blue);color:#16365f;font-weight:600}
+  .bnav .bn.active .n,.bnav .bn.done .n{background:var(--tab-blue)}
+  .tabs{display:flex;gap:2px;padding:0 34px;background:#f8f9fb;border-bottom:1px solid var(--line)}
+  .tabs .tb{padding:15px 22px;font-size:15px;color:#6b7280;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+  .tabs .tb.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  .tabs .tb.done{color:#2d3340}
+  .scope{max-width:980px;margin:0 auto;width:100%}
+  .mbody{flex:1;overflow:auto;padding:26px 38px}
+  .mfoot{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid var(--line);background:#fff}
+  .mfoot .right{display:flex;gap:10px;margin-left:auto}
+  .mfoot .hint{font-size:13px;color:var(--muted)}
+  .ctx{font-size:13px;color:var(--muted);background:#f3f6fb;border:1px solid #e2e9f3;border-radius:7px;padding:10px 14px;margin-bottom:20px}
+  .ctx b{color:#16365f}
+  /* form bits */
+  .fld{margin-bottom:22px}
+  .fld>label{display:block;font-size:16px;font-weight:600;margin-bottom:9px;color:#2d3340}
+  .sub{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .inp{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:14px;outline:none;color:#2d3340;background:#fff}
+  .inp:focus{border-color:var(--tab-blue)}
+  .sel{position:relative}
+  .sel::after{content:"⌄";position:absolute;right:12px;top:6px;color:#9aa3b0;font-size:16px}
+  select.inp{appearance:none;-webkit-appearance:none}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:5px;padding:8px 10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid #e0e4ea;border-radius:4px;padding:3px 8px;font-size:13px}
+  .chip .rm{cursor:pointer;color:#9aa3b0;font-style:normal}
+  .chips input{border:0;outline:none;flex:1;min-width:80px;font-size:13px;padding:3px}
+  .upload-row{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;color:var(--primary)}
+  .upload-row .del{margin-left:auto;color:var(--err);cursor:pointer}
+  table.tbl{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:14px;margin-top:10px}
+  table.tbl th{background:var(--panel);text-align:left;padding:13px 16px;font-weight:600;color:#3a4150;border-bottom:1px solid var(--line)}
+  table.tbl td{padding:13px 16px;border-bottom:1px solid var(--line2)}
+  .exp-toggle{cursor:pointer;width:20px;height:20px;border:1px solid var(--line);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;color:#6b7280}
+  .subrow{background:#fafbfc}
+  .subgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:6px 0 4px}
+  .subgrid label{font-size:13px;font-weight:600;display:block;margin-bottom:6px}
+  .acc{border:1px solid var(--line);border-radius:8px;margin-bottom:16px;overflow:hidden}
+  .acc>.ah{display:flex;align-items:center;gap:10px;padding:13px 16px;background:var(--panel);cursor:pointer;font-weight:600;font-size:14px}
+  .acc>.ah .car{transition:transform .15s} .acc.collapsed>.ah .car{transform:rotate(-90deg)}
+  .acc .ac{padding:20px 18px}
+  .acc.collapsed .ac{display:none}
+  .pblock{margin-bottom:26px}
+  .pblock>h4{font-size:19px;font-weight:500;margin:0 0 16px;color:#2d3340}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+  .grp-t{font-size:15px;color:#3a4150;margin-bottom:14px}
+  .lab{font-size:12px;color:var(--muted);margin-bottom:5px}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:5px;padding:7px 9px}
+  .swatch i{width:18px;height:18px;border-radius:3px;border:1px solid #d7dbe2;display:block;flex:none}
+  .swatch input{border:0;outline:none;font-size:13px;width:100%}
+  /* font mapping table + type tags */
+  .maptbl{width:100%;border-collapse:collapse;margin:4px 0}
+  .maptbl th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--line)}
+  .maptbl td{padding:8px 10px;border-bottom:1px solid var(--line2);font-size:13px;vertical-align:middle}
+  .tag-ot{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.4px;background:#eef2ff;color:#3b4ba0;border:1px solid #d6ddff;border-radius:4px;padding:2px 6px}
+  code{background:#f1f3f7;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;font-size:12px;color:#3a4150}
+  /* attach-to-option box + flow */
+  .attach-box{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0 14px;background:var(--panel)}
+  .attach-flow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .af-node{font-size:11.5px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px 9px;color:#3a4150}
+  .af-node.af-sel{font-family:ui-monospace,Menlo,monospace;background:#eef2ff;border-color:#d6ddff;color:#3b4ba0}
+  .af-arrow{color:#9aa3b0;font-size:14px}
+  /* font records written (fill / stroke layers) */
+  .rec1{font-size:11px;color:#6b7280}
+  .rec2{display:inline-flex;gap:5px}
+  .lyr{font-size:10.5px;font-weight:700;letter-spacing:.3px;border-radius:4px;padding:2px 6px;border:1px solid}
+  .lyr.fill{background:#eafaf1;color:#1d7a4d;border-color:#bfe8d0}
+  .lyr.stroke{background:#f3f0fb;color:#6b4bb0;border-color:#ddd3f2}
+  /* anchor binding footer */
+  .bind{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:12px;color:#3a4150;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+  .bind-l{font-weight:600;color:var(--muted)}
+  .bind-p{color:#9aa3b0;font-weight:700}
+  /* element cards (NAME / NUMBER) */
+  .elcard{border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:16px;background:#fff}
+  .elhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .eltag{font-size:13px;font-weight:700;letter-spacing:.6px;color:#fff;background:var(--primary);border-radius:5px;padding:3px 10px}
+  .arc-tog{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .ref{font-size:11px;color:#9aa3b0;font-weight:400;margin-left:6px}
+  /* save → tables written */
+  .tbl-write{margin-top:16px;border:1px dashed var(--line);border-radius:8px;padding:12px 14px;background:var(--panel)}
+  .twh{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:8px}
+  .tw{display:inline-block;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:3px 7px;margin:0 6px 6px 0;color:#3a4150}
+  /* Assemblies tab */
+  .asm{padding:24px 36px 40px}
+  .asm-sub{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-bottom:22px}
+  .asm-sub span{padding:8px 2px;font-size:15px;color:#8a94a6;cursor:pointer}
+  .asm-sub span.on{color:var(--link);border-bottom:2px solid var(--link);font-weight:600}
+  .asm-sec{margin-bottom:26px}
+  .asm-sec>h3{font-size:19px;font-weight:500;color:#2d3340;margin:0 0 14px}
+  .os-row{display:flex;gap:16px;align-items:center;padding:7px 0;font-size:15px}
+  .os-k{color:#5b6470;min-width:170px}
+  .os-v{color:#1f2733;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .os-ed{font-style:normal;color:#9aa3b0;cursor:pointer;font-size:13px}
+  .os-sel{min-width:320px;max-width:420px}
+  .os-sel select{font-size:14px}
+  .asm-note{background:#fff9e6;border:1px solid #f2e2a8;color:#7a6a2f;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:14px}
+  .ovr>b{display:block;font-size:15px;margin-bottom:8px}
+  .ovr-l{color:#5b6470;font-size:14px;padding:3px 0 3px 14px}
+  .cfg-cta{display:flex;align-items:center;justify-content:space-between;gap:20px;border:1px solid var(--primary);background:linear-gradient(180deg,#f4f7ff,#eef2ff);border-radius:12px;padding:20px 22px;margin:0 0 26px}
+  .cfg-cta-l{display:flex;gap:6px;align-items:flex-start;color:var(--primary)}
+  .cfg-t{font-size:16px;font-weight:600;color:#1f2733}
+  .cfg-s{font-size:13.5px;color:#5b6470;max-width:560px;margin-top:3px}
+  .cfg-cta .btn.primary{flex:none;font-size:15px;padding:11px 20px}
+  .cfg-badge{font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:20px}
+  .cfg-badge.ok{background:#e6f6ec;color:#1a7f43}
+  .cfg-badge.idle{background:#eef1f5;color:#6b7484}
+  /* QC */
+  .qc-card{border:1px solid var(--line);border-radius:10px;padding:24px;max-width:680px}
+  .qc-status{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:5px 12px;border-radius:20px}
+  .qc-status.idle{background:#eef0f3;color:#6b7280}
+  .qc-status.err{background:var(--errbg);color:var(--err)}
+  .qc-status.ok{background:var(--okbg);color:var(--ok)}
+  .check-list{margin:18px 0 0;padding:0;list-style:none}
+  .check-list li{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--line2);font-size:14px}
+  .check-list .mk{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;color:#fff;font-size:12px}
+  .mk.ok{background:var(--ok)} .mk.err{background:var(--err)} .mk.idle{background:#c4ccd8}
+  .check-list li .det{margin-left:auto;font-size:12px;color:var(--muted)}
+  .banner{border-radius:8px;padding:13px 16px;font-size:14px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start}
+  .banner.err{background:var(--errbg);color:#922}
+  .banner.ok{background:var(--okbg);color:#136b3c}
+  .done{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:36px 0}
+  .done .big{width:72px;height:72px;border-radius:50%;background:var(--okbg);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+  .done .big svg{width:38px;height:38px;color:var(--ok)}
+  .done h3{margin:0 0 8px;font-size:22px}
+  .done p{color:var(--muted);max-width:460px;margin:0 0 10px}
+  .kv{font-size:13px;color:#3a4150;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 18px;text-align:left;margin-top:8px}
+  .kv div{margin:3px 0}.kv b{color:#0d2340}
+  .ph{display:inline-block;background:#fff3cd;border:1px solid #f0d98a;border-radius:4px;padding:1px 7px;font-size:12px;color:#7a5b00}
+  .spec-wrap{display:flex;gap:20px;align-items:flex-start}
+  .spec-main{flex:1;min-width:0}
+  .spec-preview{flex:0 0 248px;position:sticky;top:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  .pv-t{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:left;margin-bottom:10px}
+  .pv-art{background:#f4f6fb;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;justify-content:center}
+  .pv-rows{margin-top:14px}
+  .pv-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 2px;border-bottom:1px solid var(--line)}
+  .pv-row span:first-child{color:var(--muted)}
+  .pv-note{font-size:12px;color:var(--muted);text-align:left;margin-top:12px;line-height:1.5}
+  @media(max-width:880px){.spec-wrap{flex-direction:column}.spec-preview{flex:1;width:100%;position:static}}
+  /* switcher */
+  .switcher{position:fixed;z-index:80;right:18px;bottom:18px;background:#0d1730;color:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 14px 40px rgba(0,0,0,.4);width:280px;font-size:13px}
+  .switcher h5{margin:0 0 10px;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#9fb0cf}
+  .switcher .opt{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+  .switcher .opt:hover{background:#16213f}
+  .switcher .opt.on{background:#16284d;border-color:#2f5fb0}
+  .switcher .opt .k{font-weight:700;width:18px;flex:none}
+  .switcher .opt .t b{display:block}.switcher .opt .t span{color:#9fb0cf;font-size:12px}
+  .switcher .opt .badge{margin-left:auto;background:var(--ok);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;align-self:center;display:none}
+  .switcher .opt.chosen .badge{display:inline-block}
+  .switcher .use{margin-top:10px;width:100%;background:#2f5fb0;border:0;color:#fff;padding:9px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600}
+  .switcher .use:hover{background:#3a72d6}
+  .switcher .mini{margin-top:8px;font-size:11px;color:#7e90b3;text-align:center}
+  .switcher.collapsed{display:none}
+  .switcher-reopen{display:none;position:fixed;z-index:80;right:18px;bottom:18px;background:#0d1730;color:#fff;border:1px solid #2f5fb0;border-radius:20px;padding:8px 14px;font-size:12px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .switcher-reopen b{color:#7fa8ef}
+  .switcher-reopen.show{display:inline-block}
+  .pill-note{position:fixed;left:18px;bottom:18px;z-index:80;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 13px;font-size:12px;color:var(--muted);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- top bar -->
+  <div class="topbar">
+    <div class="logo">
+      <svg class="mark" viewBox="0 0 40 40" fill="none"><path d="M5 14 L20 4 L35 14 L20 36 Z" stroke="#e8472b" stroke-width="3" stroke-linejoin="round"/></svg>
+      <span class="home">Home</span><span class="plate">Plate</span><span class="env"><b>PROD</b> 23035</span>
+    </div>
+    <div class="user"><span class="av">SV</span> Svenkatesh <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+  </div>
+  <div class="nav"><a class="active" id="navProducts">Products</a><a>Builds</a><a>Change History</a><a>Assemblies</a></div>
+
+  <div class="body">
+    <!-- icon rail -->
+    <div class="rail">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4 L4 7 V10 H6 V20 H18 V10 H20 V7 L16 4 C16 6 8 6 8 4Z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h6"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7l8-4 8 4v10l-8 4-8-4z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>
+    </div>
+
+    <!-- ===== PAGE: BROWSE ===== -->
+    <div class="filters" id="filtersPane">
+      <div class="fh"><h2>Active Filters</h2><span class="clr">CLEAR ALL</span></div>
+      <div class="achip">203532222 <i>&times;</i></div>
+      <div class="fsearch"><input placeholder="Search for Filter"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div></div>
+      <div class="hide-row"><span class="cbx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg></span> Hide filters with no results</div>
+      <div id="filterList"></div>
+    </div>
+
+    <div class="main" id="pageBrowse">
+      <h1>Browse</h1>
+      <div class="searchbar">
+        <div class="seg">Product Id <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <input id="searchInput" value="203532222">
+        <div class="clr">&times;</div>
+        <div class="bc"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5v14M7 5v14M10 5v14M13 5v14M16 5v14M19 5v14"/></svg></div>
+        <div class="go"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div>
+      </div>
+      <div class="toolbar">
+        <button class="gbtn">View</button><button class="gbtn">Manage</button>
+        <button class="actions">Actions <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <span class="dl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>
+        <span class="total">Total 1</span>
+        <span class="vw"><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><span class="on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span></span>
+      </div>
+      <table class="list">
+        <thead><tr><th style="width:36px"><input type="checkbox"></th><th>Product ID</th><th>Image</th><th>Name</th><th>Style</th><th>Site Status</th><th>Retail</th><th>Flags</th></tr></thead>
+        <tbody>
+          <tr class="prow" id="prodRow">
+            <td><input type="checkbox" onclick="event.stopPropagation()"></td>
+            <td><span class="lnk">203532222</span></td>
+            <td><span class="thumbsm" id="thumbSlot"></span></td>
+            <td>Chelsea Nike Home Stadium Shirt 2026-27</td>
+            <td><span class="lnk">1421164</span></td>
+            <td><span class="status-pill"><span class="d"></span>Active</span></td>
+            <td>£70 <span style="font-size:11px;color:#9aa3b0">GBP</span></td>
+            <td><span class="flag">HM</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pager"><span>&lsaquo;</span><span class="on">1</span><span>&rsaquo;</span></div>
+    </div>
+
+    <!-- ===== PAGE: PRODUCT DETAIL ===== -->
+    <div class="pwrap" id="pageProduct" style="display:none">
+      <div class="phead">
+        <div class="pthumb" id="thumbBig"></div>
+        <div class="pinfo">
+          <h1>Chelsea Nike Home Stadium Shirt 2026-27</h1>
+          <div class="meta">ID 203532222 | V115690 CHL NO COLOR CHELSEA NIKE HOME STADIUM SHIRT 2026-27 FI DCS</div>
+          <div class="meta">Style: Chelsea Nike Home Stadium Shirt 2026-27 (<span class="lnk">1421164</span>)<span class="hm">HM</span></div>
+          <div class="meta">Merch Class: Apparel-&gt;Jerseys-&gt;Soccer (4202)</div>
+          <div class="meta">Go Live Date: 06/01/2026 11:50:13 PM (Local) | State: Approved | Home Plate Managed: True</div>
+        </div>
+        <div class="pstats">
+          <div class="st"><div class="k">Build</div><div class="v">Complete</div></div>
+          <div class="st"><div class="k">Procurement Group</div><div class="v">FI eCom</div></div>
+          <div class="st"><div class="k">Available</div><div class="v">14723</div></div>
+          <div class="st"><div class="k">Site Status</div><div class="v"><span class="pill">Active</span></div></div>
+        </div>
+      </div>
+      <div style="padding:0 36px;margin-top:-6px;display:flex"><button class="actbtn" style="margin-left:auto">Actions <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button></div>
+      <div class="ptabs" id="ptabs">
+        <div class="pt" data-ptab="summary">Summary</div>
+        <div class="pt active" data-ptab="attributes">Attributes &amp; Copy</div>
+        <div class="pt" data-ptab="items">Items &amp; Inventory</div>
+        <div class="pt" data-ptab="classifications">Classifications</div>
+        <div class="pt" data-ptab="catalogs">Catalogs</div>
+        <div class="pt" data-ptab="media">Media</div>
+        <div class="pt" data-ptab="assemblies">Assemblies</div>
+        <div class="pt" data-ptab="audit">Audit</div>
+      </div>
+      <div id="ptabBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- scrim + shells -->
+<div class="scrim" id="scrim"></div>
+<div class="shell shellA" id="shellA">
+  <div class="mhead"><h3>Jersey Configurator</h3><button class="x" data-close>&times;</button></div>
+  <div class="stepper" id="stepperA"></div>
+  <div class="mbody" id="bodyA"></div>
+  <div class="mfoot" id="footA"></div>
+</div>
+<div class="shell shellB" id="shellB">
+  <div class="mhead"><h3>Jersey Configurator</h3><button class="x" data-close>&times;</button></div>
+  <div class="bwrap"><div class="bnav" id="navB"></div>
+    <div style="display:flex;flex-direction:column;flex:1;min-height:0"><div class="mbody" id="bodyB"></div><div class="mfoot" id="footB"></div></div>
+  </div>
+</div>
+<div class="shell shellC" id="shellC">
+  <div class="mhead"><h3>Jersey Configurator&nbsp; <span style="font-weight:400;color:#8a94a6;font-size:14px">PID 203532222 · Chelsea Nike Home Stadium Shirt 2026-27</span></h3><button class="x" data-close>&times;</button></div>
+  <div class="tabs" id="tabsC"></div>
+  <div class="mbody"><div class="scope" id="bodyC"></div></div>
+  <div class="mfoot"><div class="scope" style="display:flex;align-items:center;width:100%" id="footC"></div></div>
+</div>
+
+<div class="switcher" id="switcher">
+  <h5>Design variations · configurator shell</h5>
+  <div class="opt" data-var="A"><span class="k">A</span><div class="t"><b>Stepped modal</b><span>Wizard + top stepper (Figma)</span></div><span class="badge">In use</span></div>
+  <div class="opt" data-var="B"><span class="k">B</span><div class="t"><b>Side drawer</b><span>Section list, slides from right</span></div><span class="badge">In use</span></div>
+  <div class="opt" data-var="C"><span class="k">C</span><div class="t"><b>Full-page tabs</b><span>Takeover with tab nav</span></div><span class="badge">In use</span></div>
+  <button class="use" id="useBtn">Use this design</button>
+  <div class="mini" id="miniNote">Pick is remembered on this device.</div>
+</div>
+<button class="switcher-reopen" id="switcherReopen">Design: <b id="reopenVar">B</b> · change</button>
+<div class="pill-note">Prototype · HomePlate Configurator (FI) · click <b>203532222</b> → <b>Assemblies</b> tab → <b>Configure</b></div>
+
+<script>
+/* ===== shared jersey art (Chelsea soccer) ===== */
+function jersey(num,w){ w=w||240; return '<svg width="'+w+'" height="'+w+'" viewBox="0 0 240 240">'+
+  '<defs><linearGradient id="bg'+w+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2746b0"/><stop offset="1" stop-color="#16277a"/></linearGradient></defs>'+
+  '<path d="M76 34 L60 30 L34 52 L52 74 L66 64 L66 206 Q120 218 174 206 L174 64 L188 74 L206 52 L180 30 L164 34 Q120 60 76 34 Z" fill="url(#bg'+w+')" stroke="#0e1c54" stroke-width="2"/>'+
+  '<path d="M76 34 Q120 60 164 34 L156 50 Q120 70 84 50 Z" fill="#f5c542"/>'+
+  '<text x="120" y="92" font-size="13" font-weight="800" fill="#f5c542" text-anchor="middle" font-family="Arial">CHELSEA</text>'+
+  '<text x="120" y="160" font-size="60" font-weight="800" fill="#f5c542" text-anchor="middle" font-family="Arial">'+num+'</text>'+
+'</svg>'; }
+function jerseyNN(name,num,w){ w=w||240; return '<svg width="'+w+'" height="'+w+'" viewBox="0 0 240 240">'+
+  '<defs><linearGradient id="bgnn'+w+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2746b0"/><stop offset="1" stop-color="#16277a"/></linearGradient></defs>'+
+  '<path d="M76 34 L60 30 L34 52 L52 74 L66 64 L66 206 Q120 218 174 206 L174 64 L188 74 L206 52 L180 30 L164 34 Q120 60 76 34 Z" fill="url(#bgnn'+w+')" stroke="#0e1c54" stroke-width="2"/>'+
+  '<path d="M76 34 Q120 60 164 34 L156 50 Q120 70 84 50 Z" fill="#f5c542"/>'+
+  '<path id="arc'+w+'" d="M70 96 Q120 78 170 96" fill="none"/>'+
+  '<text font-size="15" font-weight="800" fill="#fff3cd" letter-spacing="1" font-family="Arial"><textPath href="#arc'+w+'" startOffset="50%" text-anchor="middle">'+name+'</textPath></text>'+
+  '<text x="120" y="168" font-size="58" font-weight="800" fill="#fff3cd" text-anchor="middle" font-family="Arial" stroke="#7a5b00" stroke-width="0.6">'+num+'</text>'+
+'</svg>'; }
+document.getElementById('thumbSlot').innerHTML=jersey('23',34);
+document.getElementById('thumbBig').innerHTML=jersey('23',86);
+
+/* ===== filters ===== */
+var FILTERS=[["Age Group","1"],["Assortment Type","1"],["Brand","1"],["Buyer Group","1"],["Catalog","19"],["Dcs","1"],["Decoration Type","1"],["Events","1"],["Gender","1"],["Gender Age Group","1"],["Handling Time","1"]];
+document.getElementById('filterList').innerHTML=FILTERS.map(function(f){return '<div class="filt"><div>'+f[0]+'<span class="cnt">('+f[1]+')</span></div><div class="pl">+</div></div>';}).join('');
+
+/* ===== product context ===== */
+var PRODUCT={pid:'203532222',style:'1421164',name:'Chelsea Nike Home Stadium Shirt 2026-27'};
+
+/* ===== product-detail tab bodies ===== */
+function ptabAttributes(){
+  var rows=[['Age Group','Adult'],['Assortment Type','League Seasonal'],['Brand','Nike'],['Gender','Male'],['Copy Notes 1','Home Stadium Shirt 2026-27']];
+  var tr=rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td></td></tr>';}).join('');
+  var bullets=['Brand: Nike','Imported','Dri-FIT technology wicks sweat','Woven club crest','Material: 100% recycled polyester','Short sleeve','Machine wash, tumble dry low','Officially licensed','Stadium replica'];
+  return '<div class="pcontent"><div class="left">'+
+    '<h3 class="acch"><span style="color:#9aa3b0">⌄</span>Attributes</h3>'+
+    '<div class="attr-tools"><div class="attr-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa3b0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="Search Attribute"></div>'+
+      '<span class="pillf on">All</span><span class="pillf">Memorabilia</span><span class="pillf">Merchandising</span><span class="pillf">PCM</span><span class="pillf">Search &amp; Experience</span><span class="pillf">Royalty</span>'+
+      '<button class="attr-add">Add</button></div>'+
+    '<table class="attr"><thead><tr><th>Attribute Name</th><th>Value</th><th>Actions</th></tr></thead><tbody>'+tr+'</tbody></table>'+
+    '</div><div class="right bullets"><h3>Bullets</h3><ul>'+bullets.map(function(b){return '<li>'+b+'</li>';}).join('')+'</ul></div></div>';
+}
+function ptabPlaceholder(name){ return '<div class="ph-tab">'+name+' — unchanged in this prototype. The new work lives in the <b>Assemblies</b> tab → <b>Configure</b>.</div>'; }
+var gearSvg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:6px"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-2.9 1.2V21a2 2 0 11-4 0v-.1A1.7 1.7 0 005 19.4l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.7 1.7 0 003 14.6H3a2 2 0 110-4h.1A1.7 1.7 0 005 8.6l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H10a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V10a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>';
+var OPTION_LIST=['Chelsea Mens Home 2026/27','Custom 11x14 Photo Framing','Custom 11x14 Photo Framing - Extended','Custom 16x20 Photo Framing','Custom 16x20 Photo Framing - Extended','Custom Jersey Framing','Custom Photo Framing','Custom Photo Framing - Extended','Display Case','Display Case, Required','Forename & Surname','Forename & Surname, Required','Forename Personalization','Name & Number Personalization','Personalization Message','Surname & Shirt Number'];
+function optionOpts(){ return OPTION_LIST.map(function(o){ return '<option'+(o==='Chelsea Mens Home 2026/27'?' selected':'')+'>'+o+'</option>'; }).join(''); }
+function ptabAssemblies(){
+  var status = state.saved
+    ? '<span class="cfg-badge ok">● FI setup complete</span>'
+    : '<span class="cfg-badge idle">● Front-end setup not configured</span>';
+  return '<div class="asm">'+
+    '<div class="asm-sub"><span class="on">V2</span><span>V1</span></div>'+
+    '<div class="asm-sec"><h3>Option &amp; Structure</h3>'+
+      '<div class="os-row"><span class="os-k">Option</span><span class="os-v"><div class="sel os-sel"><select class="inp">'+optionOpts()+'</select></div> <i class="os-ed">🗑</i></span></div>'+
+      '<div class="os-row"><span class="os-k">Structure</span><span class="os-v">League or Cup or Women\'s Roster Jersey</span></div>'+
+      '<div class="os-row"><span class="os-k">Configuration Required</span><span class="os-v">No <i class="os-ed">✎</i></span></div>'+
+    '</div>'+
+    '<div class="cfg-cta"><div class="cfg-cta-l">'+gearSvg+'<div><div class="cfg-t">Product Configurator · front-end setup</div>'+
+        '<div class="cfg-s">Map fonts, set NAME &amp; NUMBER anchors per print type (LEAGUE / CUP / WSL), QC and publish to MDS — no Engineering hand-off.</div>'+
+        '<div style="margin-top:8px">'+status+'</div></div></div>'+
+      '<button class="btn primary" id="assemblyConfigure">'+gearSvg+(state.saved?'Edit configuration':'Configure')+'</button></div>'+
+    '<div class="asm-sec"><h3>Catalog Assembly Overrides <i class="os-ed">✎</i></h3>'+
+      '<div class="asm-note">NOTE: Finished Products will not be recognized as smart candidates for catalogs with Assembly Option overrides!</div>'+
+      '<div class="ovr"><b>Chelsea Mens Home 2026/27 (League Only)</b>'+
+        '<div class="ovr-l">FI - Mitchell &amp; Ness International</div><div class="ovr-l">US - All Product Catalog - Non Customer Facing</div>'+
+        '<div class="ovr-l">FI - Fanatics International (FI) All Products</div><div class="ovr-l">FI - Next</div>'+
+        '<div class="ovr-l">FI - SportScheck</div><div class="ovr-l">FI - Rebel Sports Partner Feed</div>'+
+        '<div class="ovr-l">FI - Fanatics International</div></div></div>'+
+  '</div>';
+}
+function renderProductTab(){
+  var b;
+  if(productTab==='attributes') b=ptabAttributes();
+  else if(productTab==='assemblies') b=ptabAssemblies();
+  else b=ptabPlaceholder(({summary:'Summary',items:'Items & Inventory',classifications:'Classifications',catalogs:'Catalogs',media:'Media',audit:'Audit'})[productTab]||'Section');
+  document.getElementById('ptabBody').innerHTML=b;
+  document.querySelectorAll('#ptabs .pt').forEach(function(t){
+    var k=t.getAttribute('data-ptab');
+    t.classList.toggle('active', k===productTab || (k==='assemblies'&&state.open));
+  });
+}
+
+/* ===== page nav ===== */
+function showBrowse(){ document.getElementById('pageBrowse').style.display='';
+  document.getElementById('filtersPane').style.display='';
+  document.getElementById('pageProduct').style.display='none'; }
+function showProduct(){ document.getElementById('pageBrowse').style.display='none';
+  document.getElementById('filtersPane').style.display='none';
+  document.getElementById('pageProduct').style.display=''; productTab='attributes'; renderProductTab(); }
+var productTab='attributes';
+
+document.getElementById('prodRow').addEventListener('click', showProduct);
+document.getElementById('navProducts').addEventListener('click', function(){ if(state.open) closeModal(); showBrowse(); });
+
+/* ===== configurator ===== */
+var STEPS=[{k:'font',l:'Font Mapping'},{k:'spec',l:'Spec Configuration'},{k:'qc',l:'QC & Validation'},{k:'save',l:'Save & Preview'}];
+var state={ open:false, variation:'A', chosen:null, step:'font', qc:'idle', maxReached:0, saved:false };
+try{ var sv=localStorage.getItem('hp_variation'); if(sv) state.variation=sv;
+     var sc=localStorage.getItem('hp_chosen'); if(sc) state.chosen=sc; }catch(e){}
+function stepIndex(k){ for(var i=0;i<STEPS.length;i++) if(STEPS[i].k===k) return i; return 0; }
+
+function ctxBar(){ return '<div class="ctx">Configuring <b>PID '+PRODUCT.pid+'</b> · '+PRODUCT.name+' &nbsp;·&nbsp; Market: <b>FI (flat back image)</b></div>'; }
+
+function cFont(){
+  return ctxBar()+
+  '<div class="fld"><label>Name</label><input class="inp" value="'+PRODUCT.name+'"></div>'+
+  '<div class="fld"><label>Choose an Option Template</label><div class="sub">Option Template</div>'+
+    '<div class="sel"><select class="inp"><option>Name &amp; Number Jersey</option><option>Number Only</option><option>Custom N&amp;N</option></select></div></div>'+
+  '<div class="fld"><label>Upload Font</label>'+
+    '<div class="sub">Vector text (NAME) → <b>.otf / .ttf</b> file · Number images (NUMBER) → <b>.png / .jpeg</b> directory ending in <b>/</b></div>'+
+    '<button class="btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Upload</button>'+
+    '<div class="upload-row"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.5l-8.5 8.5a4 4 0 01-6-6L15 6.5a2.5 2.5 0 014 3.5l-9 9"/></svg> Roster-Block.otf <span class="tag-ot">OTF</span>'+
+      '<span class="del"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span></div>'+
+    '<div class="sub" style="margin-top:6px">asset_location: <code>/fonts/league/roster-block.otf</code> · Library: <a href="#" style="color:var(--primary)">Roster-Block</a>, <a href="#" style="color:var(--primary)">Stroke-Fill (fill+stroke)</a></div></div>'+
+  '<div class="fld"><label>Map fonts to the Option selector</label>'+
+    '<div class="sub">Each font is <b>attached to the assembly Option selector</b>, keyed by <b>print type × element</b> (FR-5, FR-6). A stroke style writes <b>two</b> font records — <b>FILL</b> (z=1) + <b>STROKE</b> (z=0) (FR-3, FR-4). Mappings persist to <code>main.assembly_option_selector_font</code>.</div>'+
+    '<div class="attach-box"><div class="lab">Attach to Option selector</div><div class="sel"><select class="inp">'+optionOpts()+'</select></div>'+
+      '<div class="attach-flow"><span class="af-node">font</span><span class="af-arrow">→</span><span class="af-node">print_type × element</span><span class="af-arrow">→</span><span class="af-node af-sel">assembly_option_selector_font</span></div></div>'+
+    '<div class="chips"><span class="chip">'+PRODUCT.pid+' <i class="rm">&times;</i></span><input placeholder="search PID…"></div>'+
+    '<table class="tbl"><thead><tr><th style="width:34px"></th><th>PID</th><th>Style</th><th>Base Style Name</th></tr></thead><tbody>'+
+      '<tr><td><span class="exp-toggle" data-exp="r1">&minus;</span></td><td>'+PRODUCT.pid+'</td><td>'+PRODUCT.style+'</td><td>'+PRODUCT.name+'</td></tr>'+
+      '<tr class="subrow" id="r1"><td></td><td colspan="3">'+
+        '<table class="maptbl"><thead><tr><th>Print type</th><th>Element</th><th>Font</th><th>Type</th><th>Records written</th></tr></thead><tbody>'+
+          fontRow('LEAGUE','NAME',['Roster-Block','Stroke-Fill'],'OTF',true)+
+          fontRow('LEAGUE','NUMBER',['Roster-Block','Number-PNG'],'PNG',false)+
+          fontRow('CUP','NAME',['Cup-Block'],'TTF',false)+
+          fontRow('CUP','NUMBER',['Cup-Block','Number-PNG'],'PNG',false)+
+          fontRow('WSL','NAME',['Stroke-Fill','Serif'],'OTF',true)+
+          fontRow('WSL','NUMBER',['Serif','Number-PNG'],'PNG',false)+
+        '</tbody></table>'+
+      '</td></tr>'+
+    '</tbody></table></div>';
+}
+function fontRow(pt,el,fonts,type,stroke){
+  var opts='<option>Select font</option>'+fonts.map(function(f){return '<option>'+f+'</option>';}).join('');
+  var writes = stroke
+    ? '<span class="rec2"><span class="lyr fill">FILL · z=1</span><span class="lyr stroke">STROKE · z=0</span></span>'
+    : '<span class="rec1">1 record · z=1</span>';
+  return '<tr><td><b>'+pt+'</b></td><td>'+el+'</td><td><div class="sel"><select class="inp">'+opts+'</select></div></td>'+
+    '<td><span class="tag-ot">'+type+'</span></td><td>'+writes+'</td></tr>';
+}
+function elBlock(el,d){
+  // d: {x,y,z,maxw,height,hmode,arced,arc,media}
+  var arcRow = d.arced
+    ? '<div><div class="lab">arc_radius</div><input class="inp" value="'+d.arc+'"></div>'
+    : '<div><div class="lab">arc_radius</div><input class="inp" value="—" disabled></div>';
+  return '<div class="elcard"><div class="elhd"><span class="eltag">'+el+'</span>'+
+      '<label class="arc-tog"><input type="checkbox" '+(d.arced?'checked':'')+' disabled> is_arced</label></div>'+
+    '<div class="two">'+
+      '<div><div class="grp-t">Position &amp; size <span class="ref">reference canvas 2000×2000</span></div>'+
+        '<div class="pair"><div><div class="lab">x</div><input class="inp" value="'+d.x+'"></div>'+
+          '<div><div class="lab">y</div><input class="inp" value="'+d.y+'"></div></div>'+
+        '<div class="pair"><div><div class="lab">z (layer)</div><input class="inp" value="'+d.z+'"></div>'+
+          '<div><div class="lab">max_width</div><input class="inp" value="'+d.maxw+'"></div></div>'+
+        '<div class="lab">gravity</div><div class="sel"><select class="inp" disabled><option>SOUTH</option></select></div></div>'+
+      '<div><div class="grp-t">Typography &amp; render</div>'+
+        '<div class="lab">height ('+(d.hmode==='px'?'number-image px':'font pt @ 72 DPI')+')</div><input class="inp" value="'+d.height+'" style="margin-bottom:14px">'+
+        '<div class="pair">'+arcRow+
+          '<div><div class="lab">media_id</div><input class="inp" value="'+d.media+'"></div></div>'+
+        '<div class="pair" style="margin-top:10px"><div><div class="lab">font_id</div><input class="inp" value="'+d.font+'"></div>'+
+          '<div><div class="lab">product_assembly_id</div><input class="inp" value="'+PRODUCT.pid+'" disabled></div></div></div></div>'+
+      '<div class="bind"><span class="bind-l">Anchor bound to</span> <code>product '+PRODUCT.pid+'</code><span class="bind-p">+</span><code>'+d.media+'</code><span class="bind-p">+</span><code>'+d.font+'</code> <span class="ref">FR-9 · one row per product_assembly_id</span></div></div>';
+}
+var FI_IDS={LEAGUE:{nameMedia:50101,nameFont:70101,numMedia:50102,numFont:70102},
+            CUP:{nameMedia:50201,nameFont:70201,numMedia:50202,numFont:70202},
+            WSL:{nameMedia:50301,nameFont:70301,numMedia:50302,numFont:70302}};
+function fiBlock(name){
+  var id=FI_IDS[name];
+  return '<div class="pblock"><h4>'+name+'</h4>'+
+    elBlock('NAME',{x:1000,y:437,z:1,maxw:900,height:72,hmode:'pt',arced:true,arc:820,media:id.nameMedia,font:id.nameFont})+
+    elBlock('NUMBER',{x:1000,y:980,z:1,maxw:700,height:560,hmode:'px',arced:false,arc:'—',media:id.numMedia,font:id.numFont})+
+  '</div>';
+}
+function cSpec(){
+  return '<div class="spec-wrap">'+
+    '<div class="spec-main">'+
+      '<div class="ctx">FI renders on a <b>flat back image</b> — set the anchor contract (x, y, z, max_width, height, gravity, is_arced, arc_radius, media_id, font_id) for <b>NAME</b> and <b>NUMBER</b> per print type (LEAGUE / CUP / WSL). Gravity is fixed to <b>SOUTH</b>. Each anchor is <b>bound to the product + its media_id + font_id</b> (FR-9) — one row per <code>product_assembly_id</code>.</div>'+
+      '<div class="acc"><div class="ah" data-acc><span class="car">⌄</span> PID '+PRODUCT.pid+' | '+PRODUCT.name+'</div><div class="ac">'+
+        fiBlock('LEAGUE')+fiBlock('CUP')+fiBlock('WSL')+'</div></div>'+
+    '</div>'+
+    '<aside class="spec-preview">'+
+      '<div class="pv-t">Preview</div>'+
+      '<div class="pv-art">'+jerseyNN('YOUR NAME','00',220)+'</div>'+
+      '<div class="pv-rows"><div class="pv-row"><span>Name</span><span class="ph">Your Name</span></div>'+
+        '<div class="pv-row"><span>Number</span><span class="ph">00</span></div></div>'+
+      '<div class="pv-note">Live preview of name &amp; number placement on the flat back image using placeholders. Operators confirm anchor points and typography here before QC (FR-16).</div>'+
+    '</aside>'+
+  '</div>';
+}
+var QC_CHECKS=[
+  ['font_type valid (OTF/TTF/PNG/JPEG)','ok','4 fonts'],
+  ['asset_location path rules (.otf/.ttf file · img dir ends /)','ok','all paths valid'],
+  ['Font color — valid 6-char hex (no #)','ok','1d2a5c'],
+  ['Font → option mapping complete (print_type × element)','dyn','LEAGUE/CUP/WSL × NAME/NUMBER'],
+  ['Anchor points within reference bounds (0–2000)','ok','0 out of range'],
+  ['gravity = SOUTH for every element','ok','6/6 SOUTH'],
+  ['arc_radius set where is_arced = true','ok','3 arced names'],
+  ['Anchor bound to media_id + font_id (FR-9)','ok','6/6 bound'],
+  ['Anchor complete per (print_type, element)','dyn','6 anchors']];
+function cQC(){
+  var st=state.qc;
+  var banner=st==='err'?'<div class="banner err"><b>2 issues found.</b> Resolve before this configuration can be published to MDS.</div>'
+            :st==='ok'?'<div class="banner ok"><b>QC passed.</b> Configuration verified — ready to save to MDS.</div>':'';
+  var pill=st==='ok'?'<span class="qc-status ok">● Verified</span>':st==='err'?'<span class="qc-status err">● Failed</span>':'<span class="qc-status idle">● Not run</span>';
+  var li=QC_CHECKS.map(function(c){var mk='idle',det=c[2];if(st==='ok')mk='ok';else if(st==='err'){mk=c[1]==='dyn'?'err':'ok';if(mk==='err')det='Missing — WSL · NUMBER anchor';}
+    return '<li><span class="mk '+mk+'">'+(mk==='ok'?'✓':mk==='err'?'!':'')+'</span>'+c[0]+'<span class="det">'+det+'</span></li>';}).join('');
+  var action=st==='ok'?'<button class="btn" id="qcRerun">Re-run validation</button>'
+    :'<button class="btn primary" id="qcRun">'+(st==='err'?'Re-run validation':'Run validation')+'</button>'+(st==='err'?' <button class="btn" id="qcFix">Auto-fix mapping</button>':'');
+  return '<div class="qc-card"><div style="display:flex;justify-content:space-between;align-items:center"><h4 style="margin:0;font-size:18px;font-weight:600">Validation &amp; QC gate</h4>'+pill+'</div>'+
+    '<p style="color:var(--muted);font-size:14px;margin:10px 0 16px">Integrity check on assets, mappings and specs. A <b>Verified</b> status is required before saving to MDS.</p>'+banner+
+    '<ul class="check-list">'+li+'</ul><div style="margin-top:18px">'+action+'</div></div>';
+}
+function cSave(){
+  if(!state.saved){
+    return '<div class="qc-card" style="max-width:600px"><h4 style="margin:0 0 6px;font-size:18px;font-weight:600">Save configuration to MDS</h4>'+
+      '<p style="color:var(--muted);font-size:14px">Idempotent write to the Master Data Store for the PDP configurator to consume — re-running inserts, updates, or no-ops as needed. This run = a single color style.</p>'+
+      '<div class="kv"><div><b>Product:</b> PID '+PRODUCT.pid+' · '+PRODUCT.name+'</div><div><b>Market:</b> FI &nbsp; <b>Print types:</b> LEAGUE · CUP · WSL</div>'+
+      '<div><b>QC status:</b> '+(state.qc==='ok'?'Verified ✓':'Not verified')+'</div><div><b>audit_by:</b> svenkatesh@fanatics.com</div></div>'+
+      '<div class="tbl-write"><div class="twh">Tables written</div>'+
+        '<span class="tw">assembly_element_position</span><span class="tw">product_assembly_element_position</span>'+
+        '<span class="tw">main.assembly_option_selector</span><span class="tw">main.assembly_option_selector_font</span>'+
+        '<span class="tw">main.font</span><span class="tw">main.font_metadata</span></div>'+
+      '<div style="margin-top:18px"><button class="btn primary" id="saveBtn" '+(state.qc==='ok'?'':'disabled')+'>Save to MDS</button>'+(state.qc!=='ok'?' <span class="hint" style="margin-left:8px">Pass QC first</span>':'')+'</div></div>';
+  }
+  return '<div class="done"><div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg></div>'+
+    '<h3>Saved to MDS</h3><p>Configuration is live for the PDP Product Configurator — no Engineering hand-off required.</p>'+
+    '<div style="display:flex;gap:24px;align-items:center;margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 26px">'+
+      '<div>'+jersey('00',150)+'</div>'+
+      '<div style="text-align:left"><div style="font-size:12px;color:var(--muted);margin-bottom:6px">Phase 2 · Preview with placeholders</div>'+
+        '<div style="font-size:15px;margin-bottom:8px">Name <span class="ph">Your Name</span> &nbsp; Number <span class="ph">00</span></div>'+
+        '<div style="font-size:13px;color:var(--muted);max-width:240px">Operators preview placement on the base image before publish (FR-16).</div>'+
+        '<button class="btn sm" style="margin-top:12px" id="restartBtn">Done</button></div></div></div>';
+}
+function bodyFor(step){ return step==='font'?cFont():step==='spec'?cSpec():step==='qc'?cQC():step==='save'?cSave():''; }
+
+function footHTML(){
+  var idx=stepIndex(state.step);
+  var back=idx>0?'<button class="btn" data-go="'+STEPS[idx-1].k+'">Back</button>':'<button class="btn" data-close>Cancel</button>';
+  var right='';
+  if(state.step==='font') right='<button class="btn primary" data-go="spec">Next</button>';
+  else if(state.step==='spec') right='<button class="btn primary" data-go="qc">Next</button>';
+  else if(state.step==='qc') right='<button class="btn primary" data-go="save" '+(state.qc==='ok'?'':'disabled')+'>'+(state.qc==='ok'?'Continue to Save':'Pass QC to continue')+'</button>';
+  else if(state.step==='save') right=state.saved?'<button class="btn primary" data-close>Done</button>':'<button class="btn" data-go="qc">Back</button>';
+  var hint=state.step==='qc'&&state.qc!=='ok'?'<span class="hint">QC gate — must be Verified before publish</span>':'';
+  return back+hint+'<div class="right">'+right+'</div>';
+}
+function go(step){ state.step=step; state.maxReached=Math.max(state.maxReached,stepIndex(step)); render(); }
+
+function renderA(){
+  var sh=STEPS.map(function(s,i){var cls=s.k===state.step?'active':(i<=state.maxReached?'done':'');
+    var t='<div class="stp '+cls+'" data-go="'+s.k+'"><div class="dot"></div><div class="lbl">'+s.l+'</div></div>';
+    if(i<STEPS.length-1) t+='<div class="stpline '+(i<state.maxReached?'fill':'')+'"></div>'; return t;}).join('');
+  document.getElementById('stepperA').innerHTML=sh;
+  document.getElementById('bodyA').innerHTML=bodyFor(state.step);
+  document.getElementById('footA').innerHTML=footHTML();
+}
+function renderB(){
+  document.getElementById('navB').innerHTML=STEPS.map(function(s,i){var cls=s.k===state.step?'active':(i<=state.maxReached?'done':'');
+    return '<div class="bn '+cls+'" data-go="'+s.k+'"><span class="n">'+(i<state.maxReached&&s.k!==state.step?'✓':(i+1))+'</span>'+s.l+'</div>';}).join('');
+  document.getElementById('bodyB').innerHTML=bodyFor(state.step);
+  document.getElementById('footB').innerHTML=footHTML();
+}
+function renderC(){
+  document.getElementById('tabsC').innerHTML=STEPS.map(function(s,i){var cls=s.k===state.step?'active':(i<=state.maxReached?'done':'');
+    return '<div class="tb '+cls+'" data-go="'+s.k+'">'+s.l+'</div>';}).join('');
+  document.getElementById('bodyC').innerHTML=bodyFor(state.step);
+  document.getElementById('footC').innerHTML=footHTML();
+}
+function render(){
+  ['A','B','C'].forEach(function(v){ document.getElementById('shell'+v).classList.toggle('open', state.open && state.variation===v); });
+  document.getElementById('scrim').classList.toggle('show', state.open && state.variation!=='C');
+  if(state.open){ if(state.variation==='A') renderA(); else if(state.variation==='B') renderB(); else renderC(); }
+  document.querySelectorAll('.switcher .opt').forEach(function(o){o.classList.toggle('on', o.getAttribute('data-var')===state.variation);o.classList.toggle('chosen', o.getAttribute('data-var')===state.chosen);});
+  if(document.getElementById('pageProduct').style.display!=='none') renderProductTab();
+}
+function openConfigurator(){ state.open=true; state.step='font'; state.maxReached=0; state.saved=false; state.qc='idle'; render(); }
+function closeModal(){ state.open=false; render(); }
+
+/* ===== delegated events ===== */
+document.body.addEventListener('click', function(e){
+  var pt=e.target.closest('#ptabs .pt'); if(pt){ var k=pt.getAttribute('data-ptab');
+     productTab=k; if(state.open) closeModal(); else renderProductTab(); return; }
+  if(e.target.closest('#assemblyConfigure')){ openConfigurator(); return; }
+  var t=e.target.closest('[data-close]'); if(t){ closeModal(); return; }
+  var g=e.target.closest('[data-go]'); if(g){ var s=g.getAttribute('data-go'); if(s==='save'&&state.qc!=='ok') return; go(s); return; }
+  var acc=e.target.closest('[data-acc]'); if(acc){ acc.parentElement.classList.toggle('collapsed'); return; }
+  var exp=e.target.closest('[data-exp]'); if(exp){ var row=document.getElementById(exp.getAttribute('data-exp'));
+     var on=row.style.display==='none'; row.style.display=on?'table-row':'none'; exp.textContent=on?'−':'+'; return; }
+  if(e.target.id==='qcRun'){ state.qc='err'; render(); return; }
+  if(e.target.id==='qcFix'||e.target.id==='qcRerun'){ state.qc='ok'; render(); return; }
+  if(e.target.id==='saveBtn'){ if(state.qc==='ok'){ state.saved=true; render(); } return; }
+  if(e.target.id==='restartBtn'){ closeModal(); return; }
+  var opt=e.target.closest('.switcher .opt'); if(opt){ state.variation=opt.getAttribute('data-var');
+     try{localStorage.setItem('hp_variation',state.variation);}catch(_){}
+     if(document.getElementById('pageProduct').style.display==='none') showProduct();
+     if(!state.open) openConfigurator(); else render(); return; }
+  if(e.target.id==='useBtn'){ state.chosen=state.variation; try{localStorage.setItem('hp_chosen',state.chosen);}catch(_){}
+     document.getElementById('miniNote').textContent='Design '+state.chosen+' marked as chosen ✓';
+     document.getElementById('reopenVar').textContent=state.chosen;
+     document.getElementById('switcher').classList.add('collapsed');
+     document.getElementById('switcherReopen').classList.add('show');
+     closeModal(); return; }
+  if(e.target.closest('#switcherReopen')){ document.getElementById('switcher').classList.remove('collapsed');
+     document.getElementById('switcherReopen').classList.remove('show'); return; }
+});
+
+showBrowse(); render();
+if(state.chosen){ document.getElementById('miniNote').textContent='Design '+state.chosen+' marked as chosen ✓';
+  document.getElementById('reopenVar').textContent=state.chosen;
+  document.getElementById('switcher').classList.add('collapsed');
+  document.getElementById('switcherReopen').classList.add('show'); }
+</script>
+</body>
+</html>
