@@ -147,6 +147,8 @@
   .ff-lbl{display:block;font-size:12.5px;font-weight:600;color:#2a3140;margin-bottom:6px}
   .fc-sw.fc-sw-img{background:repeating-conic-gradient(#e3e8f0 0% 25%, #fff 0% 50%) 50%/10px 10px}
   .fc-imgnote{font-size:12px;color:var(--muted);font-style:italic}
+  .fa-cb{width:17px;height:17px;flex:none;cursor:pointer;accent-color:#2f5fb0}
+  .fc-row.fc-on .fc-nm{color:#1d2a5c}
   .ms{position:relative;flex:1;min-width:260px}
   .ms-lbl{font-size:13px;font-weight:600;color:#2a3140;margin-bottom:6px}
   .ms-field{display:flex;align-items:center;gap:6px;min-height:40px;background:#fff;border:1px solid #b9c4ef;border-radius:8px;padding:6px 10px;cursor:pointer}
@@ -871,7 +873,7 @@ document.getElementById('navAssemblies').addEventListener('click', function(){ s
 var STEPS=[{k:'setup',l:'Setup &amp; Spec Configuration'}];
 var state={ open:false, step:'setup', saved:false, dirty:false, assetSrc:'upload', aview:'overview', libSel:[], bulkPids:[], drawer:null, upType:'font', pidDraft:[], optModal:null,
   optFonts:{ LEAGUE:{name:['Roster-Block','Stroke-Fill'],number:['Number-PNG']}, CUP:{name:['Cup-Block'],number:['Number-PNG']}, WSL:{name:['Serif'],number:['Number-Serif']}, NFL:{name:['Roster-Block','Stroke-Fill'],number:['Number-PNG']} }, faOpen:null, optColors:{}, upNewFam:false, famCollapsed:{},
-  optFamily:{ LEAGUE:'English Premier League', CUP:'English Premier League', WSL:"Women's Super League", NFL:'English Premier League' } };
+  optFamily:{ LEAGUE:'English Premier League', CUP:'English Premier League', WSL:"Women's Super League", NFL:'English Premier League' }, optSel:{} };
 function stepIndex(k){ for(var i=0;i<STEPS.length;i++) if(STEPS[i].k===k) return i; return 0; }
 
 function ctxBar(){ return '<div class="ctx">Configuring <b>PID '+PRODUCT.pid+'</b> · '+PRODUCT.name+'</div>'; }
@@ -981,23 +983,22 @@ function roleTagInline(r){ if(!r) return ''; var c=r==='Stroke'?'r-stroke':r==='
 function fontAttach(pt){
   var fam=state.optFamily[pt] || FAMILIES[0];
   var assets=ASSET_LIB.filter(function(a){return a.family===fam;});
+  var sel=state.optSel[pt]||(state.optSel[pt]=[]);
   var rows=assets.map(function(a){
-    var isFont=a.type!=='PNG', hex=isFont?fontColor(pt,a.name):'';
-    if(isFont){
-      return '<div class="fc-row"><span class="fc-sw" style="background:#'+hex+'"></span>'+
-        '<span class="fc-nm">'+a.name+'</span>'+
-        '<span class="fc-hash">#</span><input class="inp fc-in" data-fc="'+pt+'|'+a.name+'" value="'+hex+'" maxlength="6" spellcheck="false"></div>';
-    }
-    return '<div class="fc-row"><span class="fc-sw fc-sw-img"></span>'+
-      '<span class="fc-nm">'+a.name+'</span></div>';
+    var isFont=a.type!=='PNG', on=sel.indexOf(a.name)>-1, hex=fontColor(pt,a.name);
+    var cb='<input type="checkbox" class="fa-cb" data-facb="'+pt+'|'+a.name+'" '+(on?'checked':'')+'>';
+    var right=(isFont&&on)
+      ? '<span class="fc-hash">#</span><input class="inp fc-in" data-fc="'+pt+'|'+a.name+'" value="'+hex+'" maxlength="6" spellcheck="false">'
+      : (isFont?'<span class="fc-imgnote">select to set color</span>':'');
+    return '<div class="fc-row'+(on?' fc-on':'')+'">'+cb+
+      '<span class="fc-nm">'+a.name+'</span>'+right+'</div>';
   }).join('');
   return '<details class="fontattach fa-collapse" open>'+
     '<summary class="fa-h"><span class="fa-caret">▾</span> Fonts &amp; Images</summary>'+
-    '<div class="fa-sub">Add fonts &amp; digit images by <b>font family</b>. Selecting a family pulls in all associated fonts &amp; images; enter a hex color per font.</div>'+
     '<div class="fld" style="max-width:360px"><label class="ff-lbl">Font family</label>'+
       '<div class="sel"><select class="inp" data-optfam="'+pt+'">'+
         FAMILIES.map(function(fm){return '<option'+(fm===fam?' selected':'')+'>'+fm+'</option>';}).join('')+'</select></div></div>'+
-    '<div class="fc-list"><div class="fc-h">Associated fonts &amp; images — hex color per font</div>'+
+    '<div class="fc-list"><div class="fc-h">Select fonts &amp; images — enter a hex color per selected font</div>'+
       (rows||'<div class="sub">No assets in this family yet.</div>')+'</div>'+
   '</details>';
 }
@@ -1312,7 +1313,10 @@ document.body.addEventListener('input', markDirty);
 document.body.addEventListener('change', markDirty);
 document.body.addEventListener('change', function(e){
   var of=e.target.closest && e.target.closest('[data-optfam]');
-  if(of){ state.optFamily[of.getAttribute('data-optfam')]=e.target.value; renderKeepScroll(); }
+  if(of){ state.optFamily[of.getAttribute('data-optfam')]=e.target.value; renderKeepScroll(); return; }
+  var fcb=e.target.closest && e.target.closest('[data-facb]');
+  if(fcb){ var pr=fcb.getAttribute('data-facb').split('|'); var arr=state.optSel[pr[0]]||(state.optSel[pr[0]]=[]);
+    var ix=arr.indexOf(pr[1]); if(ix>-1) arr.splice(ix,1); else arr.push(pr[1]); renderKeepScroll(); }
 });
 /* font-family combobox: filter options + toggle "Create option" as user types */
 document.body.addEventListener('input', function(e){
