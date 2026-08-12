@@ -1,0 +1,1416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HomePlate — Configurator Tooling Prototype (FI)</title>
+<style>
+  :root{
+    --navy:#0a1830; --navy2:#0d2340; --tab-blue:#1f8fff; --logo-navy:#1b2a4a; --logo-red:#e8472b;
+    --primary:#1a73e8; --primary-d:#155fc0; --ink:#2d3340; --muted:#6b7280; --soft:#8a94a6;
+    --line:#e3e6eb; --line2:#eef0f3; --bg:#ffffff; --panel:#f6f7f9; --ok:#1a9d57; --okbg:#e8f6ee;
+    --err:#d23b3b; --errbg:#fdecec; --chip:#f1f3f6; --link:#1a73e8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#dfe3e8}
+  .app{min-height:100vh;background:#fff;position:relative}
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:center;height:64px;padding:0 22px;border-bottom:1px solid var(--line);background:#fff}
+  .logo{display:flex;align-items:center;gap:9px;font-size:27px;font-weight:800;letter-spacing:-.5px}
+  .logo .home{color:var(--logo-navy)} .logo .plate{color:var(--logo-red)}
+  .logo .mark{width:164px;height:22px}
+  .logo .env{font-size:12px;font-weight:700;color:#9aa3b0;margin-left:8px;letter-spacing:.5px}
+  .logo .env b{color:#5b6470}
+  .user{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:15px;color:#3a4150}
+  .user .av{width:34px;height:34px;border-radius:50%;background:#152a52;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .nav{display:flex;align-items:center;height:48px;background:var(--navy)}
+  .nav a{color:#cdd6e4;font-size:15px;padding:0 26px;height:48px;display:flex;align-items:center;text-decoration:none;cursor:pointer}
+  .nav a.active{background:var(--tab-blue);color:#fff}
+  .body{display:flex;min-height:calc(100vh - 112px)}
+  .rail{width:62px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding-top:18px;gap:22px;color:#7b8494;z-index:60}
+  .rail svg{width:22px;height:22px}
+  .railicon{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:9px;cursor:pointer}
+  .railfont{cursor:pointer}
+  .railicon.railfont:hover{background:#eef2ff;color:var(--primary)}
+  .railicon.on{background:var(--primary);color:#fff}
+  /* Font & Image Library drawer */
+  .libdrawer{position:fixed;top:0;left:0;height:100%;width:0;overflow:hidden;z-index:75;background:rgba(15,23,48,.32);transition:width 0s}
+  .libdrawer.open{width:100%}
+  .libpanel{position:absolute;top:0;left:0;height:100%;width:0;background:#fff;box-shadow:2px 0 28px rgba(0,0,0,.18);transition:width .22s ease;overflow-y:auto;padding:0}
+  .libdrawer.open .libpanel{width:560px;max-width:92vw;padding:22px 26px}
+  .libhd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
+  .libhd h2{margin:0 0 4px;font-size:20px}
+  .libhd p{margin:0;font-size:13px;color:var(--muted);max-width:400px}
+  .libx{border:none;background:#f1f3f7;border-radius:8px;width:32px;height:32px;font-size:20px;line-height:1;cursor:pointer;color:var(--muted)}
+  .libtools{display:flex;gap:12px;align-items:center;margin-bottom:16px}
+  .fsearch2{flex:1}
+  .fsearch2 input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px}
+  .assets{display:flex;flex-direction:column;gap:12px}
+  .asset{border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .asset-hd{display:flex;align-items:center;gap:8px}
+  .asset-kind{font-size:12px;color:var(--muted);margin-left:auto}
+  .asset-loc{margin:6px 0 10px}
+  .asset-pids{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+  .apl{font-size:12px;color:var(--muted);margin-right:4px}
+  .pidchip{background:#eef2ff;color:#33489c;border:1px solid #d6ddff;border-radius:14px;padding:3px 8px 3px 10px;font-size:12px;font-weight:600}
+  .pidchip .rmpid{cursor:pointer;margin-left:4px;color:#8494c9;font-style:normal}
+  .addpid{border:1px dashed var(--primary);background:#fff;color:var(--primary);border-radius:14px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer}
+  /* Setup step note */
+  .setup-note{display:flex;align-items:flex-start;gap:12px;background:#eef2ff;border:1px solid #d6ddff;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#33489c}
+  .setup-note .btn.sm{flex:none;margin-left:auto;white-space:nowrap}
+  .maptbl.mapstandalone{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  /* preview header + print-type selector */
+  .pv-hd{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+  .pv-pt{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+  .sel.sm{flex:1;max-width:120px}
+  .sel.sm select{padding:5px 8px;font-size:12px}
+  /* ---------- Assemblies page ---------- */
+  .nav a{cursor:pointer}
+  .apage{flex:1;display:flex;min-height:0}
+  .arail{width:62px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding-top:18px;gap:16px;color:#7b8494;flex:none}
+  .arail .railicon svg{width:22px;height:22px}
+  .amain{flex:1;overflow-y:auto;background:#fff}
+  .amain-pad{padding:26px 40px 48px}
+  .amain-pad h1{font-size:30px;font-weight:400;margin:0 0 6px;color:#2a3140}
+  /* overview landing */
+  .ov-wrap{display:flex;align-items:center;justify-content:center;gap:20px;margin:30px 0;flex-wrap:wrap}
+  .ov-col{display:flex;flex-direction:column;gap:24px;min-width:220px}
+  .ov-card{background:#fff;border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.08);border-radius:8px;padding:16px 20px;font-size:16px;font-weight:600;color:#2a3140}
+  .ov-card .chev{color:#9aa3b0;margin-right:8px;font-size:18px}
+  .ov-art{flex:none}
+  .ov-hint{max-width:760px;margin:8px auto 0;text-align:center;font-size:13.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+  /* Option-Lists style header */
+  .opt-hd{display:flex;align-items:center;justify-content:space-between}
+  .createnew{background:#1f8fff;color:#fff;border:none;border-radius:7px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
+  .opt-sub{color:var(--muted);font-size:13.5px;margin:2px 0 16px;max-width:720px}
+  .opt-tools{display:flex;justify-content:flex-end;margin-bottom:12px}
+  .opt-tools .fsearch2{position:relative;max-width:280px;width:100%}
+  .opt-tools .fsearch2 input{width:100%;border:1px solid var(--line);border-radius:7px;padding:8px 32px 8px 12px;font-size:13px}
+  .opt-tools .ic2{position:absolute;right:9px;top:8px}
+  /* Assembly Option table */
+  .ol-label{max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .oltable .cbase{color:#2a3140}
+  .oltable .cnum{color:var(--link);font-weight:600}
+  .editpen span{font-size:12px}
+  .ol-pager{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line)}
+  .pgnav{letter-spacing:2px}
+  /* Edit Assembly Option modal — fixed header + footer, scrolling body */
+  .optmodal{position:fixed;inset:0;z-index:95;background:rgba(15,23,48,.4);display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow:hidden}
+  .optmodal-panel{width:100%;max-width:1040px;max-height:calc(100vh - 48px);background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:hidden}
+  .om-head{flex:none;background:#fff;display:flex;justify-content:space-between;align-items:center;padding:20px 26px;border-bottom:1px solid var(--line);border-radius:12px 12px 0 0}
+  .om-head h2{margin:0;font-size:22px;font-weight:500}
+  .om-body{flex:1 1 auto;overflow-y:auto;padding:22px 26px}
+  .om-struct-title{font-size:22px;font-weight:500;margin:6px 0 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .om-note{margin-top:6px;font-size:13.5px;color:#3a4150}
+  .om-foot{flex:none;background:#fff;display:flex;justify-content:flex-end;gap:10px;padding:14px 26px;border-top:1px solid var(--line);border-radius:0 0 12px 12px}
+  /* Decision / Group boxes + Service Item dropdown (match app) */
+  .decbox,.grpbox{display:inline-block;min-width:150px;background:#f4f6f9;border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-size:15px;color:#9aa3b0;font-weight:400;line-height:1}
+  .ph-t{font-weight:inherit}
+  .svc-item{display:inline-flex;flex-direction:column;gap:5px;margin-left:6px}
+  .svc-item .svl{font-size:14px;color:#3a4150;font-weight:400}
+  .svc-item .svsel select{min-width:210px;background:#fff;color:#3a4150}
+  /* structure blocks */
+  .pblk{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:18px}
+  .pblk-h{display:flex;align-items:flex-end;gap:14px;font-size:19px;font-weight:600;color:#2a3140;margin-bottom:8px;flex-wrap:wrap}
+  .pnest{border-left:1px solid var(--line);padding-left:16px;margin-top:8px}
+  .pnest-h{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:600;color:#3a4150;margin:8px 0;flex-wrap:wrap}
+  .pnest2{border:1px solid var(--line2);border-radius:8px;padding:14px 16px;margin:10px 0}
+  .pnest2-h{display:flex;align-items:flex-end;gap:12px;font-size:15px;font-weight:600;margin-bottom:12px;flex-wrap:wrap}
+  .pnest2-h .svc-item .svsel select{min-width:190px}
+  .efrow{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-end}
+  .efrow.top{margin-bottom:18px}
+  .ef{display:flex;flex-direction:column;gap:5px;min-width:150px;flex:1}
+  .ef.sm{flex:0 0 210px;margin-left:auto}
+  .efl{font-size:12.5px;color:#3a4150}
+  .einp{border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:13px;background:#fff}
+  .einp.dis{background:#f4f6f9;color:#8a94a6}
+  .ef-req{display:flex;align-items:center;gap:6px;font-size:13px;color:#3a4150;white-space:nowrap;padding-bottom:8px}
+  .nnblk{margin-top:6px}
+  .nnh{font-size:15px;font-weight:600;margin:14px 0 8px}
+  /* NEW: font & image attach — searchable multi-select */
+  .fontattach{margin-top:14px;background:#eef4ff;border:1px solid #cfe0fb;border-radius:9px;padding:14px 16px}
+  .fa-h{font-size:14px;font-weight:700;color:#1663a8}
+  summary.fa-h{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
+  summary.fa-h::-webkit-details-marker{display:none}
+  .fa-caret{display:inline-block;transition:transform .15s;font-size:11px}
+  .fa-collapse:not([open]) .fa-caret{transform:rotate(-90deg)}
+  .fa-sub{font-size:12px;color:#4a6488;margin:4px 0 12px}
+  .fa-grid{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .fa-col{flex:1;min-width:260px}
+  .fc-list{margin-top:12px;background:#fff;border:1px solid #cfe0fb;border-radius:8px;padding:10px 12px}
+  .fc-h{font-size:11.5px;font-weight:600;color:#4a6488;margin-bottom:8px}
+  .fc-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+  .fc-sw{width:20px;height:20px;border-radius:5px;border:1px solid rgba(0,0,0,.18);flex:none}
+  .fc-nm{font-size:13px;font-weight:600;color:#2a3140;flex:1}
+  .fc-hash{color:#9aa3b0;font-size:13px}
+  .fc-in{width:88px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;text-transform:lowercase}
+  .ff-lbl{display:block;font-size:12.5px;font-weight:600;color:#2a3140;margin-bottom:6px}
+  .fc-sw.fc-sw-img{background:repeating-conic-gradient(#e3e8f0 0% 25%, #fff 0% 50%) 50%/10px 10px}
+  .fc-imgnote{font-size:12px;color:var(--muted);font-style:italic}
+  .ms{position:relative;flex:1;min-width:260px}
+  .ms-lbl{font-size:13px;font-weight:600;color:#2a3140;margin-bottom:6px}
+  .ms-field{display:flex;align-items:center;gap:6px;min-height:40px;background:#fff;border:1px solid #b9c4ef;border-radius:8px;padding:6px 10px;cursor:pointer}
+  .ms.open .ms-field{border-color:#2f5fb0;box-shadow:0 0 0 2px rgba(47,95,176,.15)}
+  .ms-chips{display:flex;flex-wrap:wrap;gap:6px;flex:1}
+  .ms-chip{display:inline-flex;align-items:center;gap:5px;background:#2f5fb0;color:#fff;border-radius:14px;padding:3px 6px 3px 11px;font-size:12.5px;font-weight:600}
+  .ms-chip .ms-rm{cursor:pointer;font-style:normal;opacity:.85}
+  .ms-ph{color:#8a94a6;font-size:13px}
+  .ms-caret{color:#8494c9;font-size:12px}
+  .ms-menu{position:absolute;left:0;right:0;top:100%;margin-top:5px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 12px 30px rgba(0,0,0,.16);z-index:6;overflow:hidden}
+  .ms-search{width:100%;border:none;border-bottom:1px solid var(--line);padding:10px 12px;font-size:13px;box-sizing:border-box}
+  .ms-list{max-height:200px;overflow-y:auto}
+  .ms-opt{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:13px;cursor:pointer;color:#2a3140}
+  .ms-opt:hover{background:#f4f6fb}
+  .ms-opt.on{color:#2f5fb0;font-weight:600}
+  .ms-box{width:17px;height:17px;border:1px solid #b9c4ef;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+  .ms-opt.on .ms-box{background:#2f5fb0;border-color:#2f5fb0}
+  .ms-mfoot{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .railicon.railopt.on{background:var(--primary);color:#fff}
+  .oltable{margin-top:0}
+  .oltable th{font-size:12.5px;color:var(--muted);font-weight:600}
+  .oltable td{font-size:13.5px;vertical-align:middle}
+  .oltable tr.rsel{background:#eef4ff}
+  .oltable .mono code{font-size:12px}
+  .oltable .muted{color:var(--muted);font-size:12.5px}
+  .oltable .lib-nm{font-weight:600;color:#2a3140}
+  .editpen{color:#7b8494;cursor:pointer}
+  .pidcount{display:inline-block;min-width:20px;text-align:center;background:#0d1730;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-right:6px}
+  .pidmore{font-size:11.5px;color:var(--muted);margin-left:2px}
+  /* bulk PID association bar */
+  .bulkbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;background:#0d1730;color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:14px}
+  .bulk-l{font-size:13px}
+  .bpids{display:flex;flex-wrap:wrap;gap:6px}
+  .bpid{background:#1b2748;border:1px solid #34406a;color:#c7d2f0;border-radius:14px;padding:3px 10px;font-size:12px;cursor:pointer}
+  .bpid.on{background:#2f5fb0;border-color:#5a86d8;color:#fff;font-weight:600}
+  .bulkbar .btn.sm{margin-left:auto}
+  .btn.sm{padding:6px 12px;font-size:12.5px}
+  /* action button + guidance tags */
+  .editpen{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--primary);cursor:pointer}
+  .editpen:hover{background:#eef2ff}
+  .cn-wrap{display:flex;align-items:center;gap:10px}
+  .arail .railfont{flex-direction:column;height:auto;gap:3px;padding:6px 0}
+  .raillbl{font-size:9px;font-weight:700;letter-spacing:.3px;color:var(--primary)}
+  /* upload / associate drawer */
+  .dwr-scrim{position:fixed;inset:0;background:rgba(15,23,48,.34);z-index:90}
+  .dwr{position:fixed;top:0;right:0;height:100%;width:440px;max-width:94vw;background:#fff;box-shadow:-2px 0 30px rgba(0,0,0,.2);z-index:91;display:flex;flex-direction:column;animation:dwrin .22s ease}
+  @keyframes dwrin{from{transform:translateX(30px);opacity:.6}to{transform:translateX(0);opacity:1}}
+  .dwr-hd{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+  .dwr-hd h3{margin:0;font-size:18px}
+  .dwr-x{border:none;background:#f1f3f7;border-radius:8px;width:32px;height:32px;font-size:20px;line-height:1;cursor:pointer;color:var(--muted)}
+  .dwr-body{padding:20px 22px;overflow-y:auto;flex:1}
+  .dwr-body .fld{margin-bottom:18px}
+  .dwr-body .fld label{display:block;font-size:12.5px;font-weight:600;color:#3a4150;margin-bottom:7px}
+  .dwr-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line)}
+  .up-toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:6px}
+  .up-t{background:#fff;border:none;border-right:1px solid var(--line);padding:8px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+  .up-t:last-child{border-right:none}
+  .up-t.on{background:var(--primary);color:#fff}
+  .dropzone{border:2px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:18px}
+  .dz-hint{font-size:11.5px;color:#9aa3b0;font-family:ui-monospace,Menlo,monospace}
+  .lib-nm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .lib-path-inline{font-size:12px;color:var(--muted)}
+  .lib-path-inline code{font-size:12px;background:#f4f6f9;border:1px solid var(--line2);border-radius:4px;padding:1px 6px;color:#6b7280}
+  .lib-z{font-size:10.5px;font-weight:700;color:#33489c;background:#eef2ff;border:1px solid #d6ddff;border-radius:9px;padding:1px 8px}
+  /* toolbar (mimics app data-table chrome) */
+  .lib-toolbar{display:flex;justify-content:flex-end;align-items:center;margin:6px 0 14px;gap:16px}
+  .lt-filter{font-size:15px;color:#3a4150;display:flex;align-items:center;gap:7px;cursor:pointer}
+  .lt-search{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;max-width:420px;width:100%}
+  .lt-seg{display:flex;align-items:center;gap:6px;padding:9px 12px;border-right:1px solid var(--line);font-size:14px;color:#3a4150;background:#fbfcfe;white-space:nowrap;cursor:pointer}
+  .lt-search input{flex:1;border:none;outline:none;padding:9px 12px;font-size:14px;min-width:0}
+  .lt-mag{padding:0 12px;display:flex;align-items:center}
+  /* library table — mimic reference data-table */
+  .libgrid{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .libgrid thead th{text-align:left;font-size:14px;color:#3a4150;font-weight:600;padding:13px 14px;background:#f1f2f4;border-bottom:1px solid var(--line)}
+  .libgrid thead th+th{border-left:1px solid #e2e5ea}
+  .libgrid td{padding:13px 14px;border-bottom:1px solid var(--line2);font-size:14px}
+  .libgrid tbody tr:not(.fam-head):hover{background:#f7f9fc}
+  .libgrid .lib-nm{font-weight:400;color:#2a3140}
+  .lib-zcol{width:70px;text-align:left;color:#3a4150}
+  .lib-dash{color:#c7cdd6}
+  /* pagination footer (matches reference) */
+  .lib-pager{display:flex;justify-content:flex-end;align-items:center;gap:22px;padding:14px 6px 4px;color:var(--muted);font-size:14px}
+  .lp-nav{display:flex;align-items:center;gap:16px}
+  .lp-b{cursor:pointer;color:#8a94a6;font-size:15px}
+  .lp-b:hover{color:#3a4150}
+  .lp-page{color:#3a4150}
+  .path-note{display:flex;gap:10px;align-items:flex-start;background:#eef4ff;border:1px solid #cfe0fb;border-radius:8px;padding:11px 13px;font-size:12.5px;color:#33489c}
+  .lib-search{position:relative;margin:2px 0 16px;max-width:300px}
+  .lib-search input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:8px 34px 8px 12px;font-size:13px}
+  .lib-search input:focus{outline:none;border-color:#9aa3b0}
+  .lib-search-ic{position:absolute;right:11px;top:8px}
+  .lib-empty{padding:22px 4px;color:var(--muted);font-size:13.5px}
+  .fam-head{cursor:pointer}
+  .fam-head td.fam-cell{background:var(--panel);padding:9px 12px;border-bottom:1px solid var(--line)}
+  .fam-head:hover td.fam-cell{background:#eef1f6}
+  .fam-caret{display:inline-block;width:14px;color:#8a94a6;font-size:11px}
+  .fam-nm{font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#3a4150}
+  .fam-count{font-size:11.5px;color:var(--muted);margin-left:10px}
+  .fam-collapsed{display:none}
+  /* font-family combobox */
+  .cb{position:relative}
+  .cb>.inp{width:100%;box-sizing:border-box;padding-right:32px}
+  .cb-caret{position:absolute;right:12px;top:10px;color:#8a94a6;font-size:11px;pointer-events:auto;cursor:pointer}
+  .cb-menu{display:none;position:absolute;left:0;right:0;top:100%;margin-top:5px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 12px 30px rgba(0,0,0,.16);z-index:8;max-height:220px;overflow-y:auto}
+  .cb.open .cb-menu{display:block}
+  .cb-opt,.cb-create{padding:9px 13px;font-size:13.5px;color:#2a3140;cursor:pointer}
+  .cb-opt:hover,.cb-create:hover{background:#eef2ff}
+  .cb-create{color:#2f5fb0;font-weight:600;border-bottom:1px solid var(--line2)}
+  .role-tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.3px;border-radius:10px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+  .role-tag.r-stroke{background:#f3f0fb;color:#6b4bb0;border:1px solid #ddd3f2}
+  .role-tag.r-fill{background:#eafaf1;color:#1d7a4d;border:1px solid #bfe8d0}
+  .role-tag.r-img{background:#eef2ff;color:#33489c;border:1px solid #d6ddff}
+  .inp.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#8a94a6;background:#f4f6f9}
+  .lab-sub{font-weight:400;color:#9aa3b0;font-size:11px}
+  .dwr-asset{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:18px}
+  .pidwrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .pidwrap .rmpid2{cursor:pointer;font-style:normal;color:#8494c9;margin-left:4px}
+  .pdraft{background:#eef2ff;border:1px dashed #b9c4ef;color:#33489c;border-radius:14px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer}
+  .pdraft.on{background:#2f5fb0;border-style:solid;border-color:#2f5fb0;color:#fff}
+  .pidta{width:100%;resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:13px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+  /* ---------- browse: active filters ---------- */
+  .filters{width:330px;border-right:1px solid var(--line);padding:20px 22px}
+  .filters .fh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .filters .fh h2{font-size:21px;font-weight:500;margin:0;color:#3a4150}
+  .filters .fh .clr{color:var(--link);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.3px}
+  .achip{display:inline-flex;align-items:center;gap:8px;background:#e8f1fd;border:1px solid #cfe0fa;color:#1a4f93;border-radius:4px;padding:5px 10px;font-size:13px;margin-bottom:16px}
+  .achip i{cursor:pointer;font-style:normal;color:#5f86bd}
+  .fsearch{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px}
+  .fsearch input{border:0;flex:1;padding:9px 11px;font-size:14px;outline:none;color:var(--muted)}
+  .fsearch .ic{width:40px;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--line);color:#9aa3b0}
+  .hide-row{display:flex;align-items:center;gap:9px;margin-bottom:8px;font-size:15px;color:#3a4150}
+  .cbx{width:18px;height:18px;border-radius:3px;background:var(--tab-blue);display:flex;align-items:center;justify-content:center}
+  .cbx svg{width:12px;height:12px;color:#fff}
+  .filt{border-top:1px solid var(--line2);padding:14px 2px;display:flex;justify-content:space-between;align-items:center;font-size:15px;color:#3a4150}
+  .filt .cnt{color:var(--soft);font-size:13px;margin-left:5px}
+  .filt .pl{color:#9aa3b0;font-size:20px;line-height:1;cursor:pointer}
+  /* ---------- browse: main ---------- */
+  .main{flex:1;padding:30px 40px;position:relative}
+  .main h1{font-size:34px;font-weight:400;color:#3a4150;margin:0 0 20px}
+  .searchbar{display:flex;align-items:stretch;max-width:560px;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:24px}
+  .searchbar .seg{display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid var(--line);background:#fafbfc;font-size:15px;color:#3a4150;white-space:nowrap}
+  .searchbar input{border:0;flex:1;padding:11px 13px;font-size:15px;outline:none}
+  .searchbar .clr,.searchbar .bc,.searchbar .go{display:flex;align-items:center;justify-content:center;width:42px;color:#7b8494;cursor:pointer}
+  .searchbar .go{border-left:1px solid var(--line)}
+  .toolbar{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:0}
+  .toolbar .gbtn{font-size:14px;color:#9aa3b0;border:1px solid var(--line);background:#f7f8fa;border-radius:5px;padding:7px 14px;cursor:not-allowed}
+  .toolbar .actions{font-size:14px;color:#fff;background:var(--navy2);border:0;border-radius:5px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .toolbar .dl{color:var(--link);cursor:pointer}
+  .toolbar .total{margin-left:auto;font-size:14px;color:#3a4150}
+  .toolbar .vw{display:flex;gap:4px}
+  .toolbar .vw span{width:32px;height:30px;border:1px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;color:#9aa3b0;cursor:pointer}
+  .toolbar .vw span.on{border-color:var(--tab-blue);color:var(--tab-blue)}
+  table.list{width:100%;border-collapse:collapse;font-size:14px}
+  table.list th{text-align:left;padding:14px 12px;color:#5b6470;font-weight:600;border-bottom:1px solid var(--line);font-size:13px}
+  table.list td{padding:16px 12px;border-bottom:1px solid var(--line2);color:#2d3340}
+  table.list tr.prow:hover{background:#f7faff;cursor:pointer}
+  .lnk{color:var(--link);cursor:pointer}
+  .thumbsm{width:34px;height:34px}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-size:13px}
+  .status-pill .d{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .status-pill.inactive{color:#c07a00}
+  .status-pill.inactive .d{background:#c07a00}
+  .flag{display:inline-block;background:#f1ebfb;color:#7a4fc0;border:1px solid #e2d6f7;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600}
+  .flag.cust{background:#e6f4ff;color:#1663a8;border-color:#bfe0fb}
+  .flag.pb{background:#eaf2ff;color:#2f5fb0;border-color:#c9dcff}
+  .pstats .st .pill.inactive{background:#fff4e0;color:#c07a00;border-color:#f4d488}
+  .pbtag{display:inline-block;background:#eaf2ff;color:#2f5fb0;border:1px solid #c9dcff;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;margin-left:4px}
+  .pager{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:18px}
+  .pager span{width:30px;height:30px;border:1px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;color:#7b8494;cursor:pointer}
+  .pager span.on{border-color:var(--tab-blue);color:var(--tab-blue)}
+  /* ---------- product detail page ---------- */
+  .pwrap{flex:1;padding:0}
+  .phead{display:flex;gap:22px;padding:26px 36px 0}
+  .pthumb{width:96px;height:96px;border:1px solid var(--line);border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:#fbfcfd}
+  .pinfo{flex:1}
+  .pinfo h1{font-size:27px;font-weight:500;margin:0 0 6px;color:#222}
+  .pinfo .meta{font-size:14px;color:#3a4150;margin:3px 0}
+  .pinfo .meta .lnk{font-weight:500}
+  .pinfo .hm{display:inline-block;background:#f1ebfb;color:#7a4fc0;border:1px solid #e2d6f7;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;margin-left:4px}
+  .pstats{display:flex;gap:34px;align-items:flex-start;padding-top:4px}
+  .pstats .st{font-size:14px}
+  .pstats .st .k{color:#8a94a6;font-size:13px;margin-bottom:4px}
+  .pstats .st .v{font-size:19px;color:#222;font-weight:400}
+  .pstats .st .pill{background:var(--okbg);color:var(--ok);border:1px solid #bfe6cd;border-radius:4px;padding:2px 9px;font-size:13px;font-weight:600}
+  .actbtn{align-self:flex-start;background:var(--navy2);color:#fff;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .ptabs{display:flex;gap:6px;padding:22px 36px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .ptabs .pt{padding:11px 18px;font-size:15px;color:#5b6470;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;position:relative;top:1px}
+  .ptabs .pt.active{color:var(--link);background:#fff;border-color:var(--line);font-weight:500}
+  .ptabs .pt.configure{color:#fff;background:var(--primary);border-color:var(--primary);font-weight:600;display:flex;align-items:center;gap:7px}
+  .ptabs .pt.configure.active{color:#fff;background:var(--primary-d)}
+  .pcontent{padding:26px 36px 50px;display:flex;gap:40px}
+  .pcontent .left{flex:1}
+  .pcontent .right{width:340px;flex:none}
+  .acch{display:flex;align-items:center;gap:8px;font-size:24px;font-weight:500;color:#3a4150;margin:0 0 18px}
+  .attr-tools{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .attr-search{display:flex;align-items:center;border:1px solid var(--line);border-radius:6px;padding:0 10px;width:260px}
+  .attr-search input{border:0;outline:none;padding:9px 6px;font-size:14px;flex:1}
+  .pillf{border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:13px;color:#5b6470;cursor:pointer;background:#fff}
+  .pillf.on{background:#e8f1fd;border-color:#bcd6f7;color:#1a4f93}
+  .attr-add{margin-left:auto;background:var(--navy2);color:#fff;border:0;border-radius:6px;padding:8px 18px;font-size:14px;cursor:pointer}
+  table.attr{width:100%;border-collapse:collapse;font-size:15px}
+  table.attr th{text-align:left;padding:14px 8px;color:#5b6470;font-weight:600;border-bottom:1px solid var(--line);background:#fafbfc}
+  table.attr td{padding:16px 8px;border-bottom:1px solid var(--line2)}
+  .bullets h3{font-size:21px;font-weight:500;margin:0 0 14px;color:#3a4150}
+  .bullets ul{margin:0;padding-left:20px;line-height:2;color:#2d3340;font-size:15px}
+  .ph-tab{padding:40px;color:var(--muted);font-size:15px}
+  /* ---------- Buttons ---------- */
+  .btn{font-size:14px;border-radius:5px;padding:8px 16px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font-weight:500}
+  .btn:hover{background:#f7f8fa}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-d)}
+  .btn.primary[disabled]{background:#b8cdf0;border-color:#b8cdf0;cursor:not-allowed}
+  .btn.sm{padding:6px 12px;font-size:13px}
+  /* ---------- configurator shells ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(15,23,42,.42);display:none;z-index:40}
+  .scrim.show{display:block}
+  .shellA{position:fixed;z-index:50;left:50%;top:50%;transform:translate(-50%,-50%);width:1000px;max-width:96vw;height:88vh;background:#fff;border-radius:10px;box-shadow:0 30px 80px rgba(0,0,0,.35);display:none;flex-direction:column;overflow:hidden}
+  .shell.open{display:flex}
+  .mhead{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line)}
+  .mhead h3{margin:0;font-size:19px;font-weight:600}
+  .mhead .x{cursor:pointer;color:#8a94a6;font-size:22px;line-height:1;background:none;border:0}
+  .stepper{display:flex;align-items:center;padding:20px 60px 22px;background:#f8f9fb;border-bottom:1px solid var(--line)}
+  .stp{display:flex;flex-direction:column;align-items:center;gap:9px;position:relative;cursor:pointer}
+  .stp .dot{width:13px;height:13px;border-radius:50%;background:#c4ccd8;border:2px solid #c4ccd8}
+  .stp.done .dot,.stp.active .dot{background:var(--tab-blue);border-color:var(--tab-blue)}
+  .stp .lbl{font-size:14px;color:#8a94a6;white-space:nowrap}
+  .stp.active .lbl,.stp.done .lbl{color:#2d3340}
+  .stpline{flex:1;height:3px;background:#d3dae4;margin:0 4px;position:relative;top:-10px}
+  .stpline.fill{background:var(--tab-blue)}
+  .mbody{flex:1;overflow:auto;padding:26px 38px}
+  .mfoot{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid var(--line);background:#fff}
+  .mfoot .right{display:flex;gap:10px;margin-left:auto}
+  .mfoot .hint{font-size:13px;color:var(--muted)}
+  .ctx{font-size:19px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:1px solid var(--line);padding:0 0 16px 0;margin-bottom:20px}
+  .ctx b{color:#16365f;font-weight:700}
+  /* form bits */
+  .fld{margin-bottom:22px}
+  .fld>label{display:block;font-size:16px;font-weight:600;margin-bottom:9px;color:#2d3340}
+  .sub{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .inp{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:14px;outline:none;color:#2d3340;background:#fff}
+  .inp:focus{border-color:var(--tab-blue)}
+  .sel{position:relative}
+  .sel::after{content:"⌄";position:absolute;right:12px;top:6px;color:#9aa3b0;font-size:16px}
+  select.inp{appearance:none;-webkit-appearance:none}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:5px;padding:8px 10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid #e0e4ea;border-radius:4px;padding:3px 8px;font-size:13px}
+  .chip .rm{cursor:pointer;color:#9aa3b0;font-style:normal}
+  .chips input{border:0;outline:none;flex:1;min-width:80px;font-size:13px;padding:3px}
+  .upload-row{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;color:var(--primary)}
+  .upload-row .del{margin-left:auto;color:var(--err);cursor:pointer}
+  table.tbl{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:14px;margin-top:10px}
+  table.tbl th{background:var(--panel);text-align:left;padding:13px 16px;font-weight:600;color:#3a4150;border-bottom:1px solid var(--line)}
+  table.tbl td{padding:13px 16px;border-bottom:1px solid var(--line2)}
+  .exp-toggle{cursor:pointer;width:20px;height:20px;border:1px solid var(--line);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;color:#6b7280}
+  .subrow{background:#fafbfc}
+  .subgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:6px 0 4px}
+  .subgrid label{font-size:13px;font-weight:600;display:block;margin-bottom:6px}
+  .acc{border:1px solid var(--line);border-radius:8px;margin-bottom:16px;overflow:hidden}
+  .acc>.ah{display:flex;align-items:center;gap:10px;padding:13px 16px;background:var(--panel);cursor:pointer;font-weight:600;font-size:14px}
+  .acc>.ah .car{transition:transform .15s} .acc.collapsed>.ah .car{transform:rotate(-90deg)}
+  .acc .ac{padding:20px 18px}
+  .acc.collapsed .ac{display:none}
+  .pblock{margin-bottom:26px}
+  .pblock>h4{font-size:19px;font-weight:500;margin:0 0 16px;color:#2d3340}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .grp-t{font-size:15px;color:#3a4150;margin-bottom:14px}
+  .lab{font-size:12px;color:var(--muted);margin-bottom:5px}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .swatch{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:5px;padding:7px 9px}
+  .swatch i{width:18px;height:18px;border-radius:3px;border:1px solid #d7dbe2;display:block;flex:none}
+  .swatch input{border:0;outline:none;font-size:13px;width:100%}
+  /* font mapping table + type tags */
+  .maptbl{width:100%;border-collapse:collapse;margin:4px 0}
+  .maptbl th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--line)}
+  .maptbl td{padding:8px 10px;border-bottom:1px solid var(--line2);font-size:13px;vertical-align:middle}
+  .tag-ot{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.4px;background:#eef2ff;color:#3b4ba0;border:1px solid #d6ddff;border-radius:4px;padding:2px 6px}
+  code{background:#f1f3f7;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;font-size:12px;color:#3a4150}
+  /* FR-2 asset source toggle + library */
+  .src-toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:4px 0 12px}
+  .src-btn{background:#fff;border:none;border-right:1px solid var(--line);padding:8px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+  .src-btn:last-child{border-right:none}
+  .src-btn.on{background:var(--primary);color:#fff}
+  .src-panel{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--panel)}
+  .lib{display:flex;flex-direction:column;gap:8px}
+  .lib-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid var(--line);border-radius:7px;padding:9px 12px}
+  .lib-nm{font-size:13.5px;font-weight:600;color:#2a3140}
+  .lib-meta{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .lib-use{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--primary);cursor:pointer;white-space:nowrap}
+  .lib-use.on{background:#eafaf1;color:#1d7a4d;border-color:#bfe8d0}
+  /* attach-to-option box + flow */
+  .attach-box{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0 14px;background:var(--panel)}
+  .attach-flow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .af-node{font-size:11.5px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px 9px;color:#3a4150}
+  .af-node.af-sel{font-family:ui-monospace,Menlo,monospace;background:#eef2ff;border-color:#d6ddff;color:#3b4ba0}
+  .af-arrow{color:#9aa3b0;font-size:14px}
+  /* font records written (fill / stroke layers) */
+  .rec1{font-size:11px;color:#6b7280}
+  .rec2{display:inline-flex;gap:5px}
+  .lyr{font-size:10.5px;font-weight:700;letter-spacing:.3px;border-radius:4px;padding:2px 6px;border:1px solid}
+  .lyr.fill{background:#eafaf1;color:#1d7a4d;border-color:#bfe8d0}
+  .lyr.stroke{background:#f3f0fb;color:#6b4bb0;border-color:#ddd3f2}
+  /* anchor binding footer */
+  .bind{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:12px;color:#3a4150;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+  .bind-l{font-weight:600;color:var(--muted)}
+  .bind-p{color:#9aa3b0;font-weight:700}
+  /* element sections (NAME / NUMBER) — divider instead of a boxed card, to free up width for the preview */
+  .elcard{border:none;border-bottom:1px solid var(--line);padding:16px 0;margin-bottom:0}
+  .elcard:first-child{padding-top:0}
+  .elcard:last-child{border-bottom:none;padding-bottom:0}
+  .elhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .eltag{font-size:13px;font-weight:700;letter-spacing:.6px;color:#fff;background:var(--primary);border-radius:5px;padding:3px 10px}
+  .arc-tog{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .ref{font-size:11px;color:#9aa3b0;font-weight:400;margin-left:6px}
+  .lab-sub{font-weight:400;color:#9aa3b0;font-size:11px}
+  .fonttags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .fonttag{background:#eef2ff;color:#33489c;border:1px solid #d6ddff;border-radius:14px;padding:3px 11px;font-size:12.5px;font-weight:600}
+  .spec-note{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px 14px;font-size:12.5px;color:var(--muted);margin-bottom:14px}
+  .fmeta{display:flex;flex-direction:column;gap:8px}
+  .fmeta-row{display:flex;gap:9px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .hexsw{flex:none;width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.15);margin-top:1px}
+  .fmeta-t{font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .fmeta-et{font-size:11px;color:#5a86d8;background:#eef2ff;border-radius:4px;padding:1px 6px;font-weight:600}
+  .fmeta-sub{font-size:11px;color:var(--muted);margin-top:3px;font-family:ui-monospace,Menlo,monospace}
+  .et-badge{font-size:11px;color:var(--muted);background:#f1f3f7;border:1px solid var(--line);border-radius:5px;padding:2px 8px;margin-left:8px}
+  .na-collapse{margin-top:14px;border:1px solid #f4d488;border-radius:9px;background:#fffdf5;overflow:hidden}
+  .na-collapse>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:11px 14px;font-size:13.5px;font-weight:600;color:#8a5a00}
+  .na-collapse>summary::-webkit-details-marker{display:none}
+  .na-collapse .nc-caret{display:inline-block;transition:transform .15s;font-size:11px}
+  .na-collapse[open]>summary .nc-caret{transform:rotate(90deg)}
+  .na-collapse .nc-hint{font-weight:400;color:#b08a3a;font-size:11.5px}
+  .na-collapse .na-block{margin-top:0;border-top:1px solid #f4d488;padding:14px}
+  .na-block{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+  .na-h{font-size:12.5px;font-weight:600;color:#3a4150;margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .na-tag{font-size:10.5px;font-weight:700;letter-spacing:.3px;color:#8a5a00;background:#ffefc2;border:1px solid #f4d488;border-radius:10px;padding:1px 8px}
+  .na-ctrls{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+  .na-ctrls .ef{min-width:92px;flex:0 0 auto}
+  .na-ctrls .ef .inp{width:90px}
+  .cin{width:52px;height:34px;padding:2px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer}
+  .sld{display:flex;align-items:center;gap:8px}
+  .sld input[type=range]{width:110px}
+  .sld span{font-size:12px;color:var(--muted);min-width:24px}
+  .na-xform{margin-top:12px}
+  .na-xform summary{cursor:pointer;display:inline-flex;align-items:center;font-size:12.5px;font-weight:600;color:var(--link);list-style:none;border:1px solid var(--line);border-radius:7px;padding:6px 12px;user-select:none}
+  .na-xform summary::-webkit-details-marker{display:none}
+  .na-xform .xf-hide{display:none}
+  .na-xform[open] .xf-show{display:none}
+  .na-xform[open] .xf-hide{display:inline}
+  .mx-title{font-size:12.5px;font-weight:600;color:#3a4150;margin:14px 0 8px;display:flex;align-items:center}
+  .mx-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .mx-cell{display:flex;flex-direction:column;gap:4px}
+  .mx-l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mx-cell .inp{padding:6px 8px;font-size:12px}
+  .eltag.alt{background:#3a4a7a}
+  .elcard.na-only{background:#fafbff}
+  .add-el{display:flex;align-items:center;gap:12px;padding:14px 0 4px}
+  .add-note{font-size:12px;color:var(--muted)}
+  @media(max-width:1100px){.mx-grid{grid-template-columns:repeat(2,1fr)}}
+  .tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#c7d0e0;color:#fff;font-size:10px;font-style:italic;font-weight:700;font-family:Georgia,serif;cursor:help;position:relative;vertical-align:middle;margin-left:4px}
+  .tipbox{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);width:230px;background:#0d1730;color:#fff;font-size:11.5px;font-style:normal;font-weight:400;line-height:1.4;padding:9px 11px;border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.25);z-index:20;text-align:left}
+  .tipbox::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#0d1730}
+  .tip:hover .tipbox,.tip:focus .tipbox{display:block}
+  /* save → tables written */
+  .tbl-write{margin-top:16px;border:1px dashed var(--line);border-radius:8px;padding:12px 14px;background:var(--panel)}
+  .twh{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:8px}
+  .tw{display:inline-block;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:3px 7px;margin:0 6px 6px 0;color:#3a4150}
+  /* Assemblies tab */
+  .asm{padding:24px 36px 40px}
+  .asm-sub{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-bottom:22px}
+  .asm-sub span{padding:8px 2px;font-size:15px;color:#8a94a6;cursor:pointer}
+  .asm-sub span.on{color:var(--link);border-bottom:2px solid var(--link);font-weight:600}
+  .asm-sec{margin-bottom:26px}
+  .asm-sec>h3{font-size:19px;font-weight:500;color:#2d3340;margin:0 0 14px}
+  .os-row{display:flex;gap:16px;align-items:center;padding:7px 0;font-size:15px}
+  .os-k{color:#5b6470;min-width:170px}
+  .os-v{color:#1f2733;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .os-ed{font-style:normal;color:#9aa3b0;cursor:pointer;font-size:13px}
+  .os-sel{min-width:320px;max-width:420px}
+  .os-sel select{font-size:14px}
+  .asm-note{background:#fff9e6;border:1px solid #f2e2a8;color:#7a6a2f;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:14px}
+  .ovr>b{display:block;font-size:15px;margin-bottom:8px}
+  .ovr-l{color:#5b6470;font-size:14px;padding:3px 0 3px 14px}
+  .cfg-cta{display:flex;align-items:center;justify-content:space-between;gap:20px;border:1px solid var(--primary);background:linear-gradient(180deg,#f4f7ff,#eef2ff);border-radius:12px;padding:20px 22px;margin:0 0 26px}
+  .cfg-cta-l{display:flex;gap:6px;align-items:flex-start;color:var(--primary)}
+  .cfg-t{font-size:16px;font-weight:600;color:#1f2733}
+  .cfg-s{font-size:13.5px;color:#5b6470;max-width:560px;margin-top:3px}
+  .cfg-cta .btn.primary{flex:none;font-size:15px;padding:11px 20px}
+  .cfg-badge{font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:20px}
+  .cfg-badge.ok{background:#e6f6ec;color:#1a7f43}
+  .cfg-badge.idle{background:#eef1f5;color:#6b7484}
+  /* QC */
+  .qc-card{border:1px solid var(--line);border-radius:10px;padding:24px;max-width:680px}
+  .qc-status{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:5px 12px;border-radius:20px}
+  .qc-status.idle{background:#eef0f3;color:#6b7280}
+  .qc-status.err{background:var(--errbg);color:var(--err)}
+  .qc-status.ok{background:var(--okbg);color:var(--ok)}
+  .check-list{margin:18px 0 0;padding:0;list-style:none}
+  .check-list li{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--line2);font-size:14px}
+  .check-list .mk{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;color:#fff;font-size:12px}
+  .mk.ok{background:var(--ok)} .mk.err{background:var(--err)} .mk.idle{background:#c4ccd8}
+  .check-list li .det{margin-left:auto;font-size:12px;color:var(--muted)}
+  .banner{border-radius:8px;padding:13px 16px;font-size:14px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start}
+  .banner.err{background:var(--errbg);color:#922}
+  .banner.ok{background:var(--okbg);color:#136b3c}
+  .done{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:36px 0}
+  .done .big{width:72px;height:72px;border-radius:50%;background:var(--okbg);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+  .done .big svg{width:38px;height:38px;color:var(--ok)}
+  .done h3{margin:0 0 8px;font-size:22px}
+  .done p{color:var(--muted);max-width:460px;margin:0 0 10px}
+  .kv{font-size:13px;color:#3a4150;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 18px;text-align:left;margin-top:8px}
+  .kv div{margin:3px 0}.kv b{color:#0d2340}
+  .ph{display:inline-block;background:#fff3cd;border:1px solid #f0d98a;border-radius:4px;padding:1px 7px;font-size:12px;color:#7a5b00}
+  .spec-wrap{display:flex;gap:24px;align-items:flex-start}
+  .spec-main{flex:1;min-width:0}
+  .spec-preview{flex:0 0 240px;position:sticky;top:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  .pv-t{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:left;margin-bottom:10px}
+  .pv-art{background:#f4f6fb;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;justify-content:center}
+  .pv-rows{margin-top:14px}
+  .pv-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 2px;border-bottom:1px solid var(--line)}
+  .pv-row span:first-child{color:var(--muted)}
+  .pv-row .inp{width:140px;padding:5px 8px;font-size:13px;text-align:right}
+  .pv-row:last-child .inp{width:70px}
+  .pv-note{font-size:12px;color:var(--muted);text-align:left;margin-top:12px;line-height:1.5}
+  @media(max-width:880px){.spec-wrap{flex-direction:column}.spec-preview{flex:1;width:100%;position:static}}
+  .pill-note{position:fixed;left:18px;bottom:18px;z-index:80;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 13px;font-size:12px;color:var(--muted);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- top bar -->
+  <div class="topbar">
+    <div class="logo">
+      <svg class="mark" width="164" height="22" viewBox="0 0 328 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_15_3588)">
+<mask id="mask0_15_3588" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="4" y="6" width="244" height="38">
+<path d="M247.456 6H4V44H247.456V6Z" fill="white"/>
+</mask>
+<g mask="url(#mask0_15_3588)">
+<path d="M74.8445 35.5545V25.8138C74.8445 25.7433 74.8164 25.6756 74.7666 25.6257C74.7167 25.5758 74.649 25.5478 74.5785 25.5478H63.4951C63.4601 25.5474 63.4253 25.554 63.3928 25.5672C63.3604 25.5804 63.3309 25.6 63.3061 25.6248C63.2813 25.6495 63.2617 25.679 63.2485 25.7115C63.2353 25.744 63.2287 25.7788 63.2291 25.8138V35.5545C63.2291 35.5893 63.2222 35.6237 63.2088 35.6558C63.1954 35.6879 63.1758 35.717 63.151 35.7415C63.1263 35.7659 63.0969 35.7852 63.0647 35.7982C63.0324 35.8112 62.9979 35.8177 62.9631 35.8173H57.7191C57.6491 35.8173 57.5819 35.7897 57.5321 35.7405C57.4824 35.6913 57.454 35.6245 57.4531 35.5545V10.1293C57.4531 10.0588 57.4812 9.9911 57.531 9.94121C57.5809 9.89133 57.6486 9.8633 57.7191 9.8633H62.9726C63.0077 9.86288 63.0425 9.86947 63.0749 9.88269C63.1074 9.8959 63.1369 9.91548 63.1617 9.94026C63.1865 9.96505 63.206 9.99454 63.2192 10.027C63.2325 10.0595 63.2391 10.0943 63.2386 10.1293V19.984C63.2386 20.0545 63.2666 20.1222 63.3165 20.1721C63.3664 20.2219 63.4341 20.25 63.5046 20.25H74.588C74.6583 20.2491 74.7254 20.2209 74.7751 20.1711C74.8248 20.1214 74.8531 20.0543 74.854 19.984V10.1293C74.8535 10.0943 74.8601 10.0595 74.8733 10.027C74.8866 9.99454 74.9061 9.96505 74.9309 9.94026C74.9557 9.91548 74.9852 9.8959 75.0177 9.88269C75.0501 9.86947 75.0849 9.86288 75.12 9.8633H80.3006C80.3354 9.8633 80.3698 9.8702 80.4019 9.88361C80.434 9.89702 80.4632 9.91666 80.4876 9.9414C80.512 9.96614 80.5313 9.99549 80.5444 10.0278C80.5574 10.06 80.5639 10.0945 80.5635 10.1293V35.5545C80.5635 35.6242 80.5358 35.691 80.4865 35.7403C80.4372 35.7896 80.3703 35.8173 80.3006 35.8173H75.1105C75.0757 35.8177 75.0412 35.8112 75.0089 35.7982C74.9766 35.7852 74.9473 35.7659 74.9226 35.7415C74.8978 35.717 74.8782 35.6879 74.8648 35.6558C74.8514 35.6237 74.8445 35.5893 74.8445 35.5545Z" fill="#091F40"/>
+<path d="M92.9045 36.3744C91.4782 36.3971 90.0594 36.1643 88.715 35.6873C87.5307 35.2679 86.4506 34.5982 85.5483 33.7239C84.6724 32.8537 83.996 31.8034 83.566 30.6459C83.0943 29.3704 82.8614 28.019 82.8788 26.6591C82.8748 25.3489 83.1232 24.0501 83.6103 22.8338C84.0616 21.6891 84.7501 20.6531 85.6307 19.7938C86.537 18.9232 87.6083 18.2427 88.7815 17.7924C90.1024 17.2939 91.5055 17.049 92.9172 17.0704C94.3281 17.0434 95.7317 17.2797 97.056 17.7671C98.2354 18.2145 99.3124 18.8952 100.223 19.7684C101.103 20.6277 101.792 21.6638 102.243 22.8084C102.723 24.0304 102.963 25.3336 102.949 26.6464C102.967 28.0063 102.734 29.3577 102.262 30.6333C101.83 31.7943 101.147 32.8454 100.261 33.7113C99.355 34.5812 98.276 35.2503 97.094 35.6746C95.7504 36.1557 94.3316 36.3927 92.9045 36.3744ZM92.9045 31.6244C93.6238 31.6437 94.3385 31.5043 94.9977 31.2159C95.5559 30.9649 96.0505 30.5915 96.4449 30.1234C96.832 29.661 97.1159 29.1211 97.2777 28.5401C97.4516 27.9305 97.539 27.2994 97.5373 26.6654C97.5344 26.0805 97.4415 25.4995 97.2618 24.9428C97.0827 24.3759 96.7991 23.8475 96.4258 23.3848C96.037 22.9141 95.5495 22.5346 94.9977 22.2733C94.3419 21.9723 93.6258 21.826 92.9045 21.8458C92.1947 21.8282 91.4903 21.9745 90.8462 22.2733C90.2944 22.5346 89.8068 22.9141 89.418 23.3848C89.0445 23.8469 88.7619 24.3755 88.5852 24.9428C88.4028 25.4989 88.3088 26.0802 88.3065 26.6654C88.3055 27.2806 88.393 27.8928 88.5662 28.4831C88.7319 29.0588 89.0083 29.5966 89.38 30.0664C89.764 30.5477 90.2524 30.9353 90.8082 31.2001C91.4656 31.4995 92.1824 31.6457 92.9045 31.6276V31.6244Z" fill="#091F40"/>
+<path d="M117.718 35.7825C117.648 35.7817 117.581 35.7534 117.531 35.7037C117.482 35.654 117.453 35.5868 117.452 35.5165V25.9563C117.452 24.7435 117.164 23.7745 116.582 23.0462C115.999 22.3178 115.153 21.9505 114.048 21.9505C113.57 21.9439 113.098 22.0534 112.672 22.2697C112.245 22.4859 111.878 22.8023 111.6 23.1918C111.322 23.5883 111.108 24.0266 110.967 24.4901C110.818 24.9765 110.744 25.4825 110.745 25.9912V35.5165C110.745 35.587 110.717 35.6547 110.668 35.7046C110.618 35.7545 110.55 35.7825 110.479 35.7825H105.669C105.599 35.7825 105.531 35.7545 105.481 35.7046C105.431 35.6547 105.403 35.587 105.403 35.5165V17.7293C105.403 17.6588 105.431 17.5911 105.481 17.5412C105.531 17.4913 105.599 17.4633 105.669 17.4633H109.852C109.915 17.4637 109.975 17.4856 110.023 17.5255C110.071 17.5653 110.104 17.6206 110.115 17.6818L110.331 18.8978C110.339 18.9483 110.363 18.9952 110.398 19.0327C110.433 19.0701 110.478 19.0966 110.528 19.1087C110.577 19.1208 110.63 19.1181 110.678 19.1009C110.726 19.0837 110.768 19.0527 110.799 19.0118C111.277 18.3518 111.937 17.8464 112.699 17.5583C113.522 17.2389 114.395 17.0694 115.277 17.058C116.313 17.0695 117.333 17.3164 118.26 17.78C119.223 18.2783 119.995 19.0809 120.454 20.0632C120.475 20.1034 120.506 20.1376 120.544 20.1624C120.582 20.1872 120.626 20.2017 120.671 20.2046C120.717 20.2075 120.762 20.1986 120.803 20.1788C120.843 20.159 120.878 20.129 120.904 20.0917C121.506 19.162 122.314 18.3839 123.266 17.818C124.328 17.2805 125.507 17.0191 126.696 17.058C127.63 17.0539 128.56 17.1851 129.457 17.4475C130.335 17.7071 131.133 18.1854 131.775 18.8377C132.505 19.6032 133.056 20.5215 133.387 21.5261C133.834 22.895 134.041 24.3303 134.001 25.7695V35.5165C134.001 35.5868 133.972 35.654 133.923 35.7037C133.873 35.7534 133.806 35.7817 133.735 35.7825H128.894C128.824 35.7817 128.757 35.7533 128.708 35.7035C128.658 35.6537 128.631 35.5865 128.631 35.5165V25.8803C128.674 24.9199 128.476 23.9641 128.054 23.1C127.671 22.4096 126.937 22.0613 125.838 22.0613C124.739 22.0613 123.988 22.4508 123.482 23.2298C122.965 24.0438 122.701 24.9924 122.722 25.9563V35.5165C122.722 35.587 122.694 35.6547 122.644 35.7046C122.594 35.7545 122.526 35.7825 122.456 35.7825H117.718Z" fill="#091F40"/>
+<path d="M142.054 28.4772C142.015 28.4774 141.977 28.4862 141.941 28.503C141.906 28.5199 141.875 28.5443 141.85 28.5745C141.825 28.6047 141.808 28.6401 141.798 28.678C141.788 28.7159 141.787 28.7554 141.795 28.7938C142.015 29.5954 142.503 30.2973 143.179 30.7825C144.023 31.439 145.197 31.7663 146.7 31.7642C147.518 31.7528 148.332 31.653 149.129 31.4665C149.903 31.3082 150.63 30.9709 151.25 30.4817C151.303 30.4384 151.371 30.417 151.439 30.4217C151.507 30.4264 151.571 30.4569 151.618 30.507L154.275 33.4615C154.323 33.5117 154.35 33.5786 154.35 33.6483C154.35 33.718 154.323 33.785 154.275 33.8352C153.293 34.7231 152.121 35.3732 150.848 35.7352C149.471 36.1504 148.04 36.3637 146.602 36.3685C145.101 36.3998 143.607 36.1573 142.194 35.6528C140.989 35.2122 139.89 34.524 138.967 33.6325C138.085 32.7597 137.408 31.7019 136.985 30.5355C136.525 29.2572 136.299 27.9069 136.316 26.5487C136.302 25.244 136.534 23.9483 137 22.7297C137.432 21.6093 138.096 20.5927 138.948 19.7467C139.823 18.894 140.864 18.2311 142.007 17.7992C143.292 17.3139 144.658 17.0744 146.032 17.093C147.472 17.0724 148.905 17.3183 150.256 17.8182C151.464 18.2627 152.541 19.0018 153.391 19.9683C154.256 20.9934 154.854 22.216 155.133 23.5277C155.458 25.0819 155.489 26.6834 155.225 28.2492C155.215 28.3127 155.183 28.3705 155.134 28.4124C155.085 28.4542 155.023 28.4772 154.959 28.4772H142.054ZM150.11 24.5853C150.15 24.5856 150.189 24.5771 150.224 24.5605C150.26 24.5438 150.292 24.5195 150.317 24.4892C150.342 24.4589 150.36 24.4234 150.37 24.3853C150.38 24.3471 150.381 24.3073 150.373 24.2687C150.325 23.9139 150.196 23.5749 149.996 23.2775C149.745 22.9018 149.409 22.5905 149.015 22.3687C148.58 22.1232 148.111 21.9419 147.625 21.8303C147.106 21.7078 146.574 21.6462 146.041 21.6467C145.055 21.6099 144.082 21.8811 143.258 22.4225C142.624 22.8639 142.138 23.4864 141.864 24.2085C141.849 24.249 141.843 24.2928 141.847 24.336C141.852 24.3793 141.867 24.4208 141.892 24.4569C141.916 24.493 141.949 24.5227 141.987 24.5434C142.025 24.5641 142.068 24.5752 142.111 24.5758L150.11 24.5853Z" fill="#091F40"/>
+<path d="M166.852 28.7048V35.5163C166.851 35.5866 166.823 35.6538 166.773 35.7035C166.723 35.7532 166.656 35.7815 166.586 35.7823H161.332C161.262 35.7815 161.195 35.7532 161.145 35.7035C161.096 35.6538 161.067 35.5866 161.066 35.5163V10.0911C161.067 10.0208 161.096 9.95365 161.145 9.90395C161.195 9.85424 161.262 9.82595 161.332 9.82513H173.302C174.789 9.7953 176.267 10.0467 177.66 10.5661C178.83 11.0114 179.893 11.7013 180.776 12.5896C181.598 13.4341 182.229 14.4448 182.628 15.5536C183.45 17.8957 183.443 20.4486 182.609 22.7863C182.203 23.8859 181.565 24.8851 180.738 25.7155C179.853 26.5778 178.798 27.2465 177.641 27.6788C176.252 28.1895 174.782 28.4469 173.302 28.4388H167.115C167.045 28.4396 166.978 28.468 166.929 28.5178C166.879 28.5676 166.852 28.6348 166.852 28.7048ZM166.852 22.8718C166.852 22.9418 166.879 23.009 166.929 23.0588C166.978 23.1086 167.045 23.137 167.115 23.1378H173.302C174.687 23.1378 175.726 22.7483 176.418 21.9693C177.097 21.2243 177.468 20.2502 177.457 19.2428C177.465 18.2311 177.095 17.2529 176.418 16.5005C175.724 15.7088 174.685 15.313 173.302 15.313H167.115C167.045 15.3138 166.978 15.3422 166.929 15.392C166.879 15.4418 166.852 15.509 166.852 15.579V22.8718Z" fill="#E53C2E"/>
+<path d="M190.684 10.1293V35.5165C190.683 35.5867 190.655 35.6539 190.605 35.7036C190.556 35.7533 190.488 35.7816 190.418 35.7824H185.646C185.576 35.7816 185.508 35.7533 185.459 35.7036C185.409 35.6539 185.381 35.5867 185.38 35.5165V10.1293C185.38 10.0587 185.408 9.99108 185.458 9.94119C185.508 9.89131 185.575 9.86328 185.646 9.86328H190.418C190.489 9.86328 190.556 9.89131 190.606 9.94119C190.656 9.99108 190.684 10.0587 190.684 10.1293Z" fill="#E53C2E"/>
+<path d="M208.716 17.4505H213.216C213.286 17.4513 213.352 17.4797 213.402 17.5295C213.451 17.5793 213.478 17.6465 213.478 17.7165V35.5037C213.478 35.5737 213.451 35.6408 213.402 35.6906C213.352 35.7404 213.286 35.7688 213.216 35.7697H208.893C208.829 35.7694 208.767 35.7459 208.718 35.7034C208.67 35.6609 208.639 35.6023 208.63 35.5385L208.453 34.1642C208.447 34.1124 208.425 34.0636 208.391 34.0241C208.357 33.9846 208.312 33.956 208.262 33.9421C208.212 33.9282 208.159 33.9295 208.109 33.9459C208.06 33.9624 208.016 33.9931 207.984 34.0343C207.765 34.3145 207.512 34.5665 207.231 34.7848C206.781 35.1405 206.29 35.4393 205.768 35.6747C205.263 35.9064 204.731 36.0745 204.184 36.175C203.702 36.2703 203.212 36.3201 202.721 36.3238C201.424 36.3391 200.136 36.1136 198.921 35.6588C197.803 35.2319 196.787 34.5749 195.938 33.7303C195.077 32.8587 194.407 31.8168 193.972 30.6713C193.489 29.3807 193.252 28.0115 193.272 26.6338C193.25 25.244 193.501 23.8635 194.013 22.571C194.472 21.4261 195.167 20.3904 196.052 19.531C196.923 18.7007 197.959 18.063 199.092 17.6595C200.305 17.231 201.587 17.0303 202.873 17.0673C203.983 17.0508 205.083 17.2722 206.1 17.7165C206.788 18.0106 207.399 18.4592 207.886 19.0275C207.92 19.0667 207.965 19.0951 208.015 19.1091C208.065 19.1231 208.118 19.1222 208.168 19.1063C208.217 19.0905 208.261 19.0605 208.294 19.02C208.326 18.9796 208.347 18.9304 208.352 18.8787L208.453 17.7165C208.453 17.6465 208.48 17.5793 208.53 17.5295C208.579 17.4797 208.646 17.4513 208.716 17.4505ZM203.431 21.754C202.792 21.7487 202.157 21.8615 201.559 22.0865C200.988 22.2985 200.465 22.6214 200.02 23.0365C199.569 23.4643 199.215 23.9837 198.981 24.5597C198.487 25.8743 198.487 27.3236 198.981 28.6383C199.213 29.209 199.568 29.7215 200.02 30.1393C200.467 30.5521 200.99 30.8747 201.559 31.0893C202.156 31.3169 202.791 31.4308 203.431 31.425C204.125 31.4345 204.814 31.2952 205.451 31.0165C206.026 30.7649 206.549 30.406 206.99 29.9588C207.815 29.1106 208.281 27.9758 208.288 26.7922C208.291 26.1455 208.184 25.5031 207.972 24.8922C207.771 24.2996 207.45 23.7548 207.03 23.2917C206.609 22.8286 206.097 22.4572 205.527 22.2005C204.868 21.904 204.153 21.7559 203.431 21.7667V21.754Z" fill="#E53C2E"/>
+<path d="M221.994 13.3341V17.3273C221.994 17.3973 222.021 17.4645 222.07 17.5142C222.12 17.564 222.186 17.5924 222.256 17.5933H226.373C226.408 17.5933 226.442 17.6001 226.474 17.6133C226.506 17.6265 226.535 17.6458 226.559 17.6703C226.583 17.6947 226.603 17.7236 226.616 17.7555C226.629 17.7874 226.636 17.8216 226.636 17.8561V21.7764C226.636 21.8464 226.608 21.9136 226.559 21.9634C226.51 22.0132 226.443 22.0416 226.373 22.0424H222.209C222.174 22.042 222.14 22.0485 222.107 22.0615C222.075 22.0745 222.046 22.0938 222.021 22.1183C221.996 22.1427 221.977 22.1719 221.963 22.2039C221.95 22.236 221.943 22.2705 221.943 22.3053V29.0851C221.943 30.052 222.166 30.7012 222.611 31.0326C223.012 31.3511 223.508 31.5271 224.02 31.5329C224.4 31.5268 224.778 31.4898 225.151 31.4221C225.433 31.3759 225.709 31.3027 225.977 31.2036C226.012 31.1909 226.048 31.1854 226.085 31.1875C226.122 31.1897 226.158 31.1994 226.19 31.216C226.223 31.2327 226.252 31.2559 226.275 31.2843C226.299 31.3127 226.316 31.3456 226.326 31.3809L227.405 35.3076C227.421 35.371 227.413 35.4378 227.383 35.4959C227.354 35.554 227.304 35.5996 227.244 35.6243C226.704 35.8363 226.145 35.9985 225.575 36.1088C224.926 36.2277 224.27 36.308 223.612 36.3494C222.682 36.4063 221.75 36.3187 220.847 36.0898C220.025 35.8874 219.264 35.4874 218.631 34.9244C217.967 34.2988 217.464 33.522 217.164 32.6603C216.775 31.5086 216.594 30.297 216.629 29.0819V13.3341C216.629 13.2993 216.635 13.2648 216.648 13.2326C216.661 13.2003 216.681 13.171 216.705 13.1462C216.73 13.1215 216.759 13.1018 216.791 13.0884C216.823 13.075 216.857 13.0681 216.892 13.0681H221.702C221.739 13.0646 221.777 13.0688 221.812 13.0806C221.847 13.0924 221.88 13.1114 221.907 13.1365C221.934 13.1615 221.956 13.1921 221.971 13.2261C221.986 13.2601 221.994 13.2969 221.994 13.3341Z" fill="#E53C2E"/>
+<path d="M234.109 28.4771C234.07 28.4773 234.031 28.4862 233.996 28.503C233.96 28.5198 233.929 28.5442 233.904 28.5745C233.88 28.6047 233.862 28.64 233.852 28.6779C233.843 28.7159 233.842 28.7554 233.849 28.7938C234.068 29.5952 234.555 30.2972 235.23 30.7825C236.074 31.439 237.249 31.7662 238.754 31.7641C239.572 31.7526 240.386 31.6528 241.183 31.4665C241.957 31.3082 242.684 30.9709 243.305 30.4816C243.358 30.4384 243.425 30.417 243.493 30.4217C243.562 30.4264 243.625 30.4569 243.672 30.507L246.329 33.4615C246.378 33.5112 246.406 33.5784 246.406 33.6483C246.406 33.7182 246.378 33.7854 246.329 33.8351C245.348 34.7237 244.176 35.3739 242.903 35.7351C241.526 36.1501 240.097 36.3634 238.659 36.3685C237.163 36.3954 235.673 36.1508 234.264 35.6465C233.059 35.2069 231.961 34.5185 231.04 33.6261C230.157 32.7535 229.479 31.6957 229.055 30.5291C228.597 29.2505 228.37 27.9004 228.387 26.5423C228.372 25.2373 228.605 23.9413 229.074 22.7233C229.503 21.6017 230.167 20.5847 231.021 19.7403C231.896 18.8877 232.937 18.2247 234.08 17.7928C235.365 17.3076 236.729 17.068 238.102 17.0866C239.544 17.0662 240.977 17.312 242.329 17.8118C243.537 18.2556 244.613 18.9949 245.461 19.962C246.327 20.9868 246.926 22.2094 247.206 23.5213C247.53 25.0758 247.56 26.6772 247.295 28.2428C247.285 28.3058 247.253 28.3632 247.205 28.405C247.157 28.4467 247.096 28.47 247.032 28.4708L234.109 28.4771ZM242.168 24.5853C242.207 24.585 242.246 24.5761 242.281 24.5593C242.317 24.5425 242.348 24.5182 242.373 24.488C242.398 24.4579 242.416 24.4226 242.426 24.3847C242.436 24.3468 242.438 24.3072 242.431 24.2686C242.379 23.9167 242.25 23.5805 242.054 23.2838C241.802 22.9081 241.466 22.5968 241.072 22.375C240.637 22.1295 240.169 21.9482 239.682 21.8366C239.163 21.7142 238.632 21.6526 238.099 21.653C237.114 21.6154 236.142 21.8867 235.318 22.4288C234.685 22.8709 234.198 23.4931 233.922 24.2148C233.906 24.2553 233.9 24.2991 233.905 24.3423C233.91 24.3856 233.925 24.4271 233.949 24.4632C233.973 24.4993 234.006 24.529 234.044 24.5497C234.083 24.5704 234.125 24.5815 234.169 24.5821L242.168 24.5853Z" fill="#E53C2E"/>
+<path d="M4.00286 6H7.5052V6.46233C7.5052 12.0378 7.5052 17.6153 7.5052 23.195C7.49843 23.3205 7.51931 23.446 7.56637 23.5625C7.61343 23.6791 7.68551 23.7839 7.77753 23.8695C11.5775 27.6505 15.3828 31.4368 19.1934 35.2283C20.4252 36.4538 21.6665 37.673 22.8889 38.908C23.0164 39.0496 23.0913 39.2307 23.101 39.421C23.1232 40.181 23.101 40.9378 23.101 41.6978C23.101 41.8087 23.101 41.9195 23.1232 42.1475L31.6542 33.5405L32.5029 34.4082L23.063 44C22.9332 43.8797 22.8382 43.8005 22.7464 43.7118L10.6212 31.6278C8.49532 29.5167 6.36942 27.4056 4.24353 25.2945C4.15869 25.2177 4.09196 25.1231 4.04815 25.0174C4.00434 24.9117 3.98455 24.7976 3.9902 24.6833C3.9902 18.5907 3.9902 12.4991 3.9902 6.4085L4.00286 6Z" fill="#E53C2E"/>
+<path d="M22.9941 7.25085V6.00635H42.0163V25.0507C41.8928 25.0127 41.7946 24.9905 41.6996 24.9525C40.7496 24.563 39.7996 24.1577 38.8496 23.7903C38.5741 23.6827 38.5551 23.5212 38.5551 23.2837C38.5551 18.0903 38.5551 12.8981 38.5551 7.70685V7.24768L22.9941 7.25085Z" fill="#E53C2E"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_15_3588">
+<rect width="244" height="38" fill="white" transform="translate(4 6)"/>
+</clipPath>
+</defs>
+</svg>
+      <span class="env"><b>PROD</b> 23035</span>
+    </div>
+    <div class="user"><span class="av">SV</span> Svenkatesh <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+  </div>
+  <div class="nav"><a class="active" id="navProducts">Products</a><a>Builds</a><a>Change History</a><a id="navAssemblies">Assemblies</a></div>
+
+  <div class="body">
+    <!-- icon rail (Products) -->
+    <div class="rail" id="railProducts">
+      <span class="railicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4 L4 7 V10 H6 V20 H18 V10 H20 V7 L16 4 C16 6 8 6 8 4Z"/></svg></span>
+      <span class="railicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h6"/></svg></span>
+      <span class="railicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7l8-4 8 4v10l-8 4-8-4z"/></svg></span>
+      <span class="railicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span>
+      <span class="railicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></svg></span>
+    </div>
+
+    <!-- ===== PAGE: BROWSE ===== -->
+    <div class="filters" id="filtersPane">
+      <div class="fh"><h2>Active Filters</h2><span class="clr">CLEAR ALL</span></div>
+      <div class="achip">203532222 <i>&times;</i></div>
+      <div class="fsearch"><input placeholder="Search for Filter"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div></div>
+      <div class="hide-row"><span class="cbx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg></span> Hide filters with no results</div>
+      <div id="filterList"></div>
+    </div>
+
+    <div class="main" id="pageBrowse">
+      <h1>Browse</h1>
+      <div class="searchbar">
+        <div class="seg">Product Id <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+        <input id="searchInput" value="203532222">
+        <div class="clr">&times;</div>
+        <div class="bc"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5v14M7 5v14M10 5v14M13 5v14M16 5v14M19 5v14"/></svg></div>
+        <div class="go"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div>
+      </div>
+      <div class="toolbar">
+        <button class="gbtn">View</button><button class="gbtn">Manage</button>
+        <button class="actions">Actions <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+        <span class="dl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg></span>
+        <span class="total">Total 1</span>
+        <span class="vw"><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><span class="on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span></span>
+      </div>
+      <table class="list">
+        <thead><tr><th style="width:36px"><input type="checkbox"></th><th>Product ID</th><th>Image</th><th>Name</th><th>Style</th><th>Site Status</th><th>Retail</th><th>Flags</th></tr></thead>
+        <tbody>
+          <tr class="prow" data-pid="203532222">
+            <td><input type="checkbox" onclick="event.stopPropagation()"></td>
+            <td><span class="lnk">203532222</span></td>
+            <td><span class="thumbsm" id="thumbCHL"></span></td>
+            <td>Chelsea Nike Home Stadium Shirt 2026-27</td>
+            <td><span class="lnk">1421164</span></td>
+            <td><span class="status-pill"><span class="d"></span>Active</span></td>
+            <td>£70 <span style="font-size:11px;color:#9aa3b0">GBP</span></td>
+            <td><span class="flag">HM</span> <span class="flag cust" title="Custom Product">Custom Product</span></td>
+          </tr>
+          <tr class="prow" data-pid="203710155">
+            <td><input type="checkbox" onclick="event.stopPropagation()"></td>
+            <td><span class="lnk">203710155</span></td>
+            <td><span class="thumbsm" id="thumbNFL"></span></td>
+            <td>V103046 COW 87 Jake Ferguson Nike Women's Cropped Fashion Game Jersey</td>
+            <td><span class="lnk">1453994</span></td>
+            <td><span class="status-pill inactive"><span class="d"></span>Inactive</span></td>
+            <td>$130 <span style="font-size:11px;color:#9aa3b0">USD</span></td>
+            <td><span class="flag pb">PB</span> <span class="flag cust" title="Custom Product">Custom Product</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pager"><span>&lsaquo;</span><span class="on">1</span><span>&rsaquo;</span></div>
+    </div>
+
+    <!-- ===== PAGE: PRODUCT DETAIL ===== -->
+    <div class="pwrap" id="pageProduct" style="display:none">
+      <div id="pheadWrap"></div>
+      <div class="ptabs" id="ptabs">
+        <div class="pt" data-ptab="summary">Summary</div>
+        <div class="pt active" data-ptab="attributes">Attributes &amp; Copy</div>
+        <div class="pt" data-ptab="items">Items &amp; Inventory</div>
+        <div class="pt" data-ptab="classifications">Classifications</div>
+        <div class="pt" data-ptab="catalogs">Catalogs</div>
+        <div class="pt" data-ptab="media">Media</div>
+        <div class="pt" data-ptab="assemblies">Assemblies</div>
+        <div class="pt" data-ptab="audit">Audit</div>
+      </div>
+      <div id="ptabBody"></div>
+    </div>
+
+    <!-- ===== PAGE: ASSEMBLIES ===== -->
+    <div class="apage" id="pageAssembly" style="display:none">
+      <div class="arail" id="aRail">
+        <span class="railicon" data-aview="overview" title="Overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>
+        <span class="railicon" data-aview="overview" title="Validation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9l6-5 6 5-2 2H8z"/><path d="M8 11v8h8v-8"/></svg></span>
+        <span class="railicon railopt" data-aview="option" id="aRailOption" title="Option"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="13" height="6" rx="1"/><path d="M17 7h2a1 1 0 011 1v2a1 1 0 01-1 1h-6a1 1 0 00-1 1v2"/><rect x="9.5" y="16" width="4" height="5" rx="1"/></svg><span class="raillbl">Option</span></span>
+        <span class="railicon" data-aview="overview" title="Structure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M11 4v16"/></svg></span>
+        <span class="railicon" data-aview="overview" title="Options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 6h14M5 12h14M5 18h14"/><circle cx="5" cy="6" r="0.5" fill="currentColor"/></svg></span>
+        <span class="railicon" data-aview="overview" title="Selector"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/></svg></span>
+        <span class="railicon" data-aview="overview" title="Data sources"><text x="4" y="17" font-size="14" font-style="italic" font-weight="700" fill="currentColor" font-family="Georgia,serif">fx</text></span>
+        <span class="railicon railfont" data-aview="fonts" id="aRailFont" title="Font &amp; Image Library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 18 L9.5 6 h1.6 L15.6 18 M6.7 14 h7.2"/><path d="M17.5 18 V11.5 a2 2 0 0 1 3.2 -1.2"/></svg><span class="raillbl">Fonts</span></span>
+      </div>
+      <div class="amain" id="assemblyMain"></div>
+    </div>
+  </div>
+</div>
+
+<!-- scrim + shells -->
+<div class="scrim" id="scrim"></div>
+<div class="shell shellA" id="shellA">
+  <div class="mhead"><h3>Jersey Configurator</h3><button class="x" data-close>&times;</button></div>
+  <div class="stepper" id="stepperA"></div>
+  <div class="mbody" id="bodyA"></div>
+  <div class="mfoot" id="footA"></div>
+</div>
+
+<div class="pill-note">Prototype · HomePlate Configurator (FI) · click <b>Configure</b> on the Assemblies tab</div>
+
+<script>
+/* ===== shared jersey art (Chelsea soccer) ===== */
+function jersey(num,w){ w=w||240; return '<svg width="'+w+'" height="'+w+'" viewBox="0 0 240 240">'+
+  '<defs><linearGradient id="bg'+w+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2746b0"/><stop offset="1" stop-color="#16277a"/></linearGradient></defs>'+
+  '<path d="M76 34 L60 30 L34 52 L52 74 L66 64 L66 206 Q120 218 174 206 L174 64 L188 74 L206 52 L180 30 L164 34 Q120 60 76 34 Z" fill="url(#bg'+w+')" stroke="#0e1c54" stroke-width="2"/>'+
+  '<path d="M76 34 Q120 60 164 34 L156 50 Q120 70 84 50 Z" fill="#f5c542"/>'+
+  '<text x="120" y="92" font-size="13" font-weight="800" fill="#f5c542" text-anchor="middle" font-family="Arial">CHELSEA</text>'+
+  '<text x="120" y="160" font-size="60" font-weight="800" fill="#f5c542" text-anchor="middle" font-family="Arial">'+num+'</text>'+
+'</svg>'; }
+function jerseyNN(name,num,w){ w=w||240; return '<svg width="'+w+'" height="'+w+'" viewBox="0 0 240 240">'+
+  '<defs><linearGradient id="bgnn'+w+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2746b0"/><stop offset="1" stop-color="#16277a"/></linearGradient></defs>'+
+  '<path d="M76 34 L60 30 L34 52 L52 74 L66 64 L66 206 Q120 218 174 206 L174 64 L188 74 L206 52 L180 30 L164 34 Q120 60 76 34 Z" fill="url(#bgnn'+w+')" stroke="#0e1c54" stroke-width="2"/>'+
+  '<path d="M76 34 Q120 60 164 34 L156 50 Q120 70 84 50 Z" fill="#f5c542"/>'+
+  '<path id="arc'+w+'" d="M70 96 Q120 78 170 96" fill="none"/>'+
+  '<text font-size="15" font-weight="800" fill="#fff3cd" letter-spacing="1" font-family="Arial"><textPath href="#arc'+w+'" startOffset="50%" text-anchor="middle">'+name+'</textPath></text>'+
+  '<text x="120" y="168" font-size="58" font-weight="800" fill="#fff3cd" text-anchor="middle" font-family="Arial" stroke="#7a5b00" stroke-width="0.6">'+num+'</text>'+
+'</svg>'; }
+function jerseyRed(num,w){ w=w||240; return '<svg width="'+w+'" height="'+w+'" viewBox="0 0 240 240">'+
+  '<defs><linearGradient id="bgr'+w+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b2265"/><stop offset="1" stop-color="#07173f"/></linearGradient></defs>'+
+  '<path d="M76 34 L60 30 L34 52 L52 74 L66 64 L66 206 Q120 218 174 206 L174 64 L188 74 L206 52 L180 30 L164 34 Q120 60 76 34 Z" fill="url(#bgr'+w+')" stroke="#050f2b" stroke-width="2"/>'+
+  '<path d="M76 34 Q120 60 164 34 L156 50 Q120 70 84 50 Z" fill="#869397"/>'+
+  '<text x="120" y="150" font-size="58" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Arial" stroke="#869397" stroke-width="0.6">'+num+'</text>'+
+'</svg>'; }
+document.getElementById('thumbCHL').innerHTML=jersey('23',34);
+document.getElementById('thumbNFL').innerHTML=jerseyRed('87',34);
+
+/* ===== filters ===== */
+var FILTERS=[["Age Group","1"],["Assortment Type","1"],["Brand","1"],["Buyer Group","1"],["Catalog","19"],["Dcs","1"],["Decoration Type","1"],["Events","1"],["Gender","1"],["Gender Age Group","1"],["Handling Time","1"]];
+document.getElementById('filterList').innerHTML=FILTERS.map(function(f){return '<div class="filt"><div>'+f[0]+'<span class="cnt">('+f[1]+')</span></div><div class="pl">+</div></div>';}).join('');
+
+/* ===== product context ===== */
+var PRODUCTS={
+  '203532222':{pid:'203532222',style:'1421164',name:'Chelsea Nike Home Stadium Shirt 2026-27',art:'blue',config:'league',
+    meta:'V115690 CHL NO COLOR CHELSEA NIKE HOME STADIUM SHIRT 2026-27 FI DCS',
+    styleName:'Chelsea Nike Home Stadium Shirt 2026-27', merch:'Apparel-&gt;Jerseys-&gt;Soccer (4202)',
+    golive:'06/01/2026 11:50:13 PM (Local) | State: Approved', build:'Complete', proc:'FI eCom', avail:'14723', status:'Active',
+    structure:"League or Cup or Women's Roster Jersey", flag:'HM',
+    attrs:[['Age Group','Adult'],['Assortment Type','League Seasonal'],['Brand','Nike'],['Gender','Male'],['Copy Notes 1','Home Stadium Shirt 2026-27']]},
+  '203710155':{pid:'203710155',style:'1453994',name:"V103046 COW 87 Jake Ferguson Nike Women's Cropped Fashion Game Jersey JERLADGME...",art:'red',config:'roster',pb:true,
+    meta:"DCM COW WHITE TUNDRA 87 JAKE FERGUSON NIKE NFL WOMEN'S CROPPED FASHION GAME JERSEY JERLADGME",
+    styleName:"Nike NFL Women's Cropped Fashion Game Jersey", merch:'Apparel-&gt;Jerseys-&gt;Football (4199)',
+    golive:'Unknown | State: Draft', build:'To Do', proc:'NA eCom', avail:'0', status:'Inactive',
+    structure:'Roster Jersey', flag:'PB',
+    attrs:[['Age Group','Adult'],['Assortment Type','League Seasonal'],['Brand','Nike'],['Gender','Female'],['Copy Notes 1',"Women's Cropped Fashion Game Jersey"]]}
+};
+var PRODUCT=PRODUCTS['203532222'];
+function renderProductHeader(){
+  var p=PRODUCT;
+  var pb = p.pb?' <span class="pbtag">PB</span>':'<span class="hm">'+(p.flag||'HM')+'</span>';
+  var statusPill = p.status==='Active'?'<span class="pill">Active</span>':'<span class="pill inactive">Inactive</span>';
+  var art = p.art==='red'?jerseyRed('87',86):jersey('23',86);
+  document.getElementById('pheadWrap').innerHTML=
+    '<div class="phead"><div class="pthumb">'+art+'</div><div class="pinfo">'+
+      '<h1>'+p.name+'</h1>'+
+      '<div class="meta">ID '+p.pid+' | '+p.meta+'</div>'+
+      '<div class="meta">Style: '+p.styleName+' (<span class="lnk">'+p.style+'</span>)'+pb+'</div>'+
+      '<div class="meta">Merch Class: '+p.merch+'</div>'+
+      '<div class="meta">Go Live Date: '+p.golive+' | Home Plate Managed: True</div>'+
+    '</div><div class="pstats">'+
+      '<div class="st"><div class="k">Build</div><div class="v">'+p.build+'</div></div>'+
+      '<div class="st"><div class="k">Procurement Group</div><div class="v">'+p.proc+'</div></div>'+
+      '<div class="st"><div class="k">Available</div><div class="v">'+p.avail+'</div></div>'+
+      '<div class="st"><div class="k">Site Status</div><div class="v">'+statusPill+'</div></div>'+
+    '</div></div>'+
+    '<div style="padding:0 36px;margin-top:-6px;display:flex"><button class="actbtn" style="margin-left:auto">Actions <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button></div>';
+}
+
+/* ===== product-detail tab bodies ===== */
+function ptabAttributes(){
+  var rows=PRODUCT.attrs||[['Age Group','Adult'],['Brand','Nike']];
+  var tr=rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td></td></tr>';}).join('');
+  var bullets=PRODUCT.config==='roster'
+    ?['Brand: Nike','Imported','Dri-FIT technology wicks sweat','Woven team crest','Material: 100% recycled polyester','Cropped fashion cut','Machine wash, tumble dry low','Officially licensed NFL','Game replica']
+    :['Brand: Nike','Imported','Dri-FIT technology wicks sweat','Woven club crest','Material: 100% recycled polyester','Short sleeve','Machine wash, tumble dry low','Officially licensed','Stadium replica'];
+  return '<div class="pcontent"><div class="left">'+
+    '<h3 class="acch"><span style="color:#9aa3b0">⌄</span>Attributes</h3>'+
+    '<div class="attr-tools"><div class="attr-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa3b0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="Search Attribute"></div>'+
+      '<span class="pillf on">All</span><span class="pillf">Memorabilia</span><span class="pillf">Merchandising</span><span class="pillf">PCM</span><span class="pillf">Search &amp; Experience</span><span class="pillf">Royalty</span>'+
+      '<button class="attr-add">Add</button></div>'+
+    '<table class="attr"><thead><tr><th>Attribute Name</th><th>Value</th><th>Actions</th></tr></thead><tbody>'+tr+'</tbody></table>'+
+    '</div><div class="right bullets"><h3>Bullets</h3><ul>'+bullets.map(function(b){return '<li>'+b+'</li>';}).join('')+'</ul></div></div>';
+}
+function ptabPlaceholder(name){ return '<div class="ph-tab">'+name+' — unchanged in this prototype. The new work lives in the <b>Assemblies</b> tab → <b>Configure</b>.</div>'; }
+var gearSvg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:6px"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-2.9 1.2V21a2 2 0 11-4 0v-.1A1.7 1.7 0 005 19.4l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.7 1.7 0 003 14.6H3a2 2 0 110-4h.1A1.7 1.7 0 005 8.6l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H10a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V10a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>';
+var OPTION_LIST=['Chelsea Mens Home 2026/27','Custom 11x14 Photo Framing','Custom 11x14 Photo Framing - Extended','Custom 16x20 Photo Framing','Custom 16x20 Photo Framing - Extended','Custom Jersey Framing','Custom Photo Framing','Custom Photo Framing - Extended','Display Case','Display Case, Required','Forename & Surname','Forename & Surname, Required','Forename Personalization','Name & Number Personalization','Personalization Message','Surname & Shirt Number'];
+function optionOpts(){ return OPTION_LIST.map(function(o){ return '<option'+(o==='Chelsea Mens Home 2026/27'?' selected':'')+'>'+o+'</option>'; }).join(''); }
+function ptabAssemblies(){
+  var status = state.saved
+    ? '<span class="cfg-badge ok">● Setup complete</span>'
+    : '<span class="cfg-badge idle">● Setup not verified</span>';
+  return '<div class="asm">'+
+    '<div class="asm-sub"><span class="on">V2</span><span>V1</span></div>'+
+    '<div class="asm-sec"><h3>Option &amp; Structure</h3>'+
+      '<div class="os-row"><span class="os-k">Option</span><span class="os-v"><div class="sel os-sel"><select class="inp">'+optionOpts()+'</select></div> <i class="os-ed">🗑</i></span></div>'+
+      '<div class="os-row"><span class="os-k">Structure</span><span class="os-v">'+PRODUCT.structure+'</span></div>'+
+      '<div class="os-row"><span class="os-k">Configuration Required</span><span class="os-v">No <i class="os-ed">✎</i></span></div>'+
+    '</div>'+
+    '<div class="cfg-cta"><div class="cfg-cta-l">'+gearSvg+'<div><div class="cfg-t">Product Configuration - Name &amp; Number</div>'+
+        '<div style="margin-top:8px">'+status+'</div></div></div>'+
+      '<button class="btn primary" id="assemblyConfigure">'+(state.saved?'Edit configuration':'Verify Configuration')+'</button></div>'+
+    '<div class="asm-sec"><h3>Catalog Assembly Overrides <i class="os-ed">✎</i></h3>'+
+      '<div class="asm-note">NOTE: Finished Products will not be recognized as smart candidates for catalogs with Assembly Option overrides!</div>'+
+      (PRODUCT.config==='roster'
+        ? '<div class="ovr"><b>NFL 2024 Draft (Roster)</b>'+
+            '<div class="ovr-l">US - Dallas Cowboys Products</div><div class="ovr-l">US - Fanatics CCP</div>'+
+            '<div class="ovr-l">US - Nike NFL Products</div><div class="ovr-l">US - Lids</div>'+
+            '<div class="ovr-l">US - Fanatics Products - 165</div></div>'
+        : '<div class="ovr"><b>Chelsea Mens Home 2026/27 (League Only)</b>'+
+            '<div class="ovr-l">FI - Mitchell &amp; Ness International</div><div class="ovr-l">US - All Product Catalog - Non Customer Facing</div>'+
+            '<div class="ovr-l">FI - Fanatics International (FI) All Products</div><div class="ovr-l">FI - Next</div>'+
+            '<div class="ovr-l">FI - SportScheck</div><div class="ovr-l">FI - Rebel Sports Partner Feed</div>'+
+            '<div class="ovr-l">FI - Fanatics International</div></div>')+
+    '</div>'+
+  '</div>';
+}
+function renderProductTab(){
+  var b;
+  if(productTab==='attributes') b=ptabAttributes();
+  else if(productTab==='assemblies') b=ptabAssemblies();
+  else b=ptabPlaceholder(({summary:'Summary',items:'Items & Inventory',classifications:'Classifications',catalogs:'Catalogs',media:'Media',audit:'Audit'})[productTab]||'Section');
+  document.getElementById('ptabBody').innerHTML=b;
+  document.querySelectorAll('#ptabs .pt').forEach(function(t){
+    var k=t.getAttribute('data-ptab');
+    t.classList.toggle('active', k===productTab || (k==='assemblies'&&state.open));
+  });
+}
+
+/* ===== page nav ===== */
+function setNav(id){ document.querySelectorAll('.nav a').forEach(function(a){a.classList.toggle('active', a.id===id);}); }
+function showBrowse(){ document.getElementById('pageBrowse').style.display='';
+  document.getElementById('filtersPane').style.display='';
+  document.getElementById('railProducts').style.display='';
+  document.getElementById('pageProduct').style.display='none';
+  document.getElementById('pageAssembly').style.display='none'; setNav('navProducts'); }
+function showProduct(pid){ if(pid&&PRODUCTS[pid]){ PRODUCT=PRODUCTS[pid]; state.saved=false; }
+  document.getElementById('pageBrowse').style.display='none';
+  document.getElementById('filtersPane').style.display='none';
+  document.getElementById('railProducts').style.display='';
+  document.getElementById('pageAssembly').style.display='none';
+  document.getElementById('pageProduct').style.display=''; setNav('navProducts');
+  renderProductHeader(); productTab='assemblies'; renderProductTab(); }
+function showAssembly(){ document.getElementById('pageBrowse').style.display='none';
+  document.getElementById('filtersPane').style.display='none';
+  document.getElementById('railProducts').style.display='none';
+  document.getElementById('pageProduct').style.display='none';
+  document.getElementById('pageAssembly').style.display='flex'; setNav('navAssemblies'); renderAssembly(); }
+var productTab='assemblies';
+
+document.getElementById('navProducts').addEventListener('click', function(){ showBrowse(); });
+document.getElementById('navAssemblies').addEventListener('click', function(){ showAssembly(); });
+
+/* ===== configurator ===== */
+var STEPS=[{k:'setup',l:'Setup &amp; Spec Configuration'}];
+var state={ open:false, step:'setup', saved:false, dirty:false, assetSrc:'upload', aview:'overview', libSel:[], bulkPids:[], drawer:null, upType:'font', pidDraft:[], optModal:null,
+  optFonts:{ LEAGUE:{name:['Roster-Block','Stroke-Fill'],number:['Number-PNG']}, CUP:{name:['Cup-Block'],number:['Number-PNG']}, WSL:{name:['Serif'],number:['Number-Serif']}, NFL:{name:['Roster-Block','Stroke-Fill'],number:['Number-PNG']} }, faOpen:null, optColors:{}, upNewFam:false, famCollapsed:{},
+  optFamily:{ LEAGUE:'English Premier League', CUP:'English Premier League', WSL:"Women's Super League", NFL:'English Premier League' } };
+function stepIndex(k){ for(var i=0;i<STEPS.length;i++) if(STEPS[i].k===k) return i; return 0; }
+
+function ctxBar(){ return '<div class="ctx">Configuring <b>PID '+PRODUCT.pid+'</b> · '+PRODUCT.name+'</div>'; }
+
+var LIBRARY=[
+  ['Roster-Block','OTF','/fonts/league/roster-block.otf','font',true],
+  ['Stroke-Fill','OTF','/fonts/league/stroke-fill.otf','font · fill+stroke',true],
+  ['Cup-Block','TTF','/fonts/cup/cup-block.ttf','font',false],
+  ['Serif','OTF','/fonts/wsl/serif.otf','font',false],
+  ['Number-PNG','PNG','/images/shared/numbers/','number/digit image dir',true],
+  ['Number-Serif','PNG','/images/wsl/numbers/','number/digit image dir',false]];
+function upIcon(){ return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>'; }
+function clipIcon(){ return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.5l-8.5 8.5a4 4 0 01-6-6L15 6.5a2.5 2.5 0 014 3.5l-9 9"/></svg>'; }
+function delIcon(){ return '<span class="del"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>'; }
+function libRow(r){
+  var used=r[4];
+  return '<div class="lib-row"><div class="lib-main"><span class="lib-nm">'+r[0]+'</span> <span class="tag-ot">'+r[1]+'</span>'+
+    '<div class="lib-meta">'+r[3]+' · <code>'+r[2]+'</code></div></div>'+
+    '<button class="lib-use'+(used?' on':'')+'">'+(used?'✓ In use':'Use')+'</button></div>';
+}
+function assetSource(){
+  var src=state.assetSrc||'upload';
+  var toggle='<div class="src-toggle"><button class="src-btn'+(src==='upload'?' on':'')+'" data-src="upload">'+upIcon()+'Upload new</button>'+
+    '<button class="src-btn'+(src==='library'?' on':'')+'" data-src="library">Select from library</button></div>';
+  var panel;
+  if(src==='upload'){
+    panel='<div class="src-panel"><button class="btn">'+upIcon()+'Upload asset</button>'+
+      '<div class="upload-row">'+clipIcon()+' Roster-Block.otf <span class="tag-ot">OTF</span>'+delIcon()+'</div>'+
+      '<div class="upload-row">'+clipIcon()+' /numbers/ <span class="tag-ot">PNG dir</span>'+delIcon()+'</div>'+
+      '<div class="sub" style="margin-top:6px">Registered to centralized store → <code>asset_location</code>: <code>/fonts/league/roster-block.otf</code>, <code>/images/league/numbers/</code></div></div>';
+  } else {
+    panel='<div class="src-panel"><input class="inp" placeholder="Search font / image library…" style="margin-bottom:10px">'+
+      '<div class="lib">'+LIBRARY.map(libRow).join('')+'</div>'+
+      '<div class="sub" style="margin-top:8px">Reusing an existing asset links its <code>asset_location</code> — no re-upload needed.</div></div>';
+  }
+  return toggle+panel;
+}
+/* ===== Font & Image Library (global asset store, multi-PID) ===== */
+var ASSET_LIB=[
+  {name:'Roster-Block',type:'OTF',kind:'Font',family:'English Premier League',role:'Fill',z:'1',loc:'/fonts/league/roster-block.otf',by:'svenkatesh@fanatics.com',when:'May 9th',pids:['203532222','203532223','203551907']},
+  {name:'Stroke-Fill',type:'OTF',kind:'Font · fill+stroke',family:'English Premier League',role:'Stroke',z:'0',loc:'/fonts/league/stroke-fill.otf',by:'svenkatesh@fanatics.com',when:'May 9th',pids:['203532222','203551907']},
+  {name:'Cup-Block',type:'TTF',kind:'Font',family:'English Premier League',role:'Fill',z:'1',loc:'/fonts/cup/cup-block.ttf',by:'svenkatesh@fanatics.com',when:'May 12th',pids:['203532222']},
+  {name:'Number-PNG',type:'PNG',kind:'Digit image dir',family:'English Premier League',role:'Digit image',loc:'/images/shared/numbers/',by:'feed2@fanatics.com',when:'Jun 15th',pids:['203532222','203532223','203551907','204010988']},
+  {name:'Serif',type:'OTF',kind:'Font',family:"Women's Super League",role:'Fill',z:'1',loc:'/fonts/wsl/serif.otf',by:'svenkatesh@fanatics.com',when:'Jun 17th',pids:['203551907']},
+  {name:'Number-Serif',type:'PNG',kind:'Digit image dir',family:"Women's Super League",role:'Digit image',loc:'/images/wsl/numbers/',by:'feed2@fanatics.com',when:'Jun 15th',pids:['203551907']}];
+var FAMILIES=['English Premier League',"Women's Super League"];
+var PID_POOL=['203532222','203532223','203551907','204010988','204221540','203998117'];
+
+/* --- Assembly Overview (default landing) --- */
+function ovCard(c){ return '<div class="ov-card"><span class="chev">&rsaquo;</span> '+c+'</div>'; }
+function assemblyOverview(){
+  var left=['Data Sources','Validation Classes','Pre-Configurations'];
+  var right=['Assembly Structure','Assembly Options','Assembly Selector'];
+  return '<div class="amain-pad"><h1>Assembly Overview</h1>'+
+    '<div class="ov-wrap"><div class="ov-col">'+left.map(ovCard).join('')+'</div>'+
+      '<div class="ov-art">'+jerseyNN('ANY NAME','00',300)+'</div>'+
+      '<div class="ov-col">'+right.map(ovCard).join('')+'</div>'+
+    '</div>'+
+    '<div class="ov-hint">Open the <b>Font &amp; Image Library</b> from the type icon at the bottom of the left rail to manage fonts &amp; digit images and associate them with products in bulk.</div></div>';
+}
+
+/* --- Assembly Option page + Edit modal (font/image attach) --- */
+var OPT_ROWS=[
+  {label:'NFL 2024 Draft',struct:'Roster Jersey',c:[0,843,843],act:'Updated By rkrobison@fanatics.com @ May 14th 2024',layout:'roster'},
+  {label:'Roster Jersey - Chelsea - Standard - AW23 - 13387537',struct:'Roster Jersey',c:[0,19,19],act:'Created By feed2@fanatics.com @ Jun 15th 2023'},
+  {label:'League & Cup Roster Jersey - Chelsea - Standard - Chelsea Cup Roster - Sta…',struct:'League & Cup Roster Jersey',c:[0,47,47],act:'Created By feed2@fanatics.com @ Jun 15th 2023'},
+  {label:'Roster Jersey - Chelsea - Standard - AW23 - 13387544',struct:'Roster Jersey',c:[1,31,32],act:'Created By feed2@fanatics.com @ Jun 15th 2023'},
+  {label:'League & Cup Roster Jersey - Chelsea - Standard - Chelsea Cup Roster - Sta…',struct:'League & Cup Roster Jersey',c:[0,30,30],act:'Created By feed2@fanatics.com @ Jun 15th 2023'},
+  {label:'Roster Jersey - Chelsea - Standard - AW23 - 13387548',struct:'Roster Jersey',c:[1,37,38],act:'Created By feed2@fanatics.com @ Jun 15th 2023'},
+  {label:'League & Cup Roster Jersey - Chelsea - Standard - Chelsea Cup Roster - Sta…',struct:'League & Cup Roster Jersey',c:[0,41,41],act:'Created By feed2@fanatics.com @ Jun 15th 2023'},
+  {label:'Roster Jersey - Chelsea - Standard - AW22 - 13303296',struct:'Roster Jersey',c:[0,27,27],act:'Updated By kfranci@fanatics.com @ Oct 12th 2023'},
+  {label:'League & Cup Roster Jersey - Chelsea - Standard - Chelsea Cup Roster - Sta…',struct:'League & Cup Roster Jersey',c:[0,67,67],act:'Created By feed2@fanatics.com @ Jun 15th 2023'},
+  {label:'Roster Jersey - Chelsea - Standard - AW22 - 13309235',struct:'Roster Jersey',c:[0,26,26],act:'Updated By kfranci@fanatics.com @ Oct 12th 2023'},
+  {label:'Roster Jersey Goalkeeper - Chelsea - Standard - AW23 - 13387574',struct:'Roster Jersey Goalkeeper',c:[0,9,9],act:'Created By feed2@fanatics.com @ Jun 15th 2023'}];
+function optCounts(c){ return '<span class="cbase">'+c[0]+'</span> / <span class="cnum">'+c[1]+'</span> / <span class="cnum">'+c[2]+'</span>'; }
+function assemblyOptionPage(){
+  var rows=OPT_ROWS.map(function(o,i){
+    return '<tr><td class="ol-label">'+o.label+'</td><td>'+o.struct+'</td>'+
+      '<td class="mono">'+optCounts(o.c)+'</td><td class="muted">'+o.act+'</td>'+
+      '<td><button class="editpen" data-editopt="'+i+'" title="Edit Assembly Option"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="M14 6l4 4"/></svg><span>Edit</span></button></td></tr>';
+  }).join('');
+  return '<div class="amain-pad"><div class="opt-hd"><h1>Assembly Option</h1></div>'+
+    '<div class="opt-tools"><div class="fsearch2"><input value="Chelsea"><span class="ic2"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa3b0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span></div></div>'+
+    '<table class="list oltable"><thead><tr><th>Label</th><th>Assembly Structure</th><th>Counts (Base/Finished/Total)</th><th>Last Action</th><th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div class="ol-pager"><span>1 to 10 of 289</span><span class="pgnav">&laquo; &lsaquo; Page 1 of 15 &rsaquo; &raquo;</span></div></div>'+
+    (state.optModal!=null?editAssemblyOptionModal(state.optModal):'');
+}
+/* font/image pools from the library */
+function nameFontPool(){ return ASSET_LIB.filter(function(a){return a.type!=='PNG';}).map(function(a){return a.name;}); }
+function numImagePool(){ return ASSET_LIB.filter(function(a){return a.type==='PNG';}).map(function(a){return a.name;}); }
+function msField(pt,el,pool,label){
+  var sel=state.optFonts[pt][el];
+  var key=pt+'|'+el;
+  var open=state.faOpen===key;
+  var chips=sel.length?sel.map(function(n){return '<span class="ms-chip">'+n+'<i class="ms-rm" data-msrm="'+pt+'|'+el+'|'+n+'">&times;</i></span>';}).join(''):'<span class="ms-ph">Select…</span>';
+  var menu='';
+  if(open){
+    var opts=pool.map(function(n){var on=sel.indexOf(n)>-1;
+      return '<div class="ms-opt'+(on?' on':'')+'" data-msopt="'+pt+'|'+el+'|'+n+'"><span class="ms-box">'+(on?'✓':'')+'</span>'+n+'</div>';}).join('');
+    menu='<div class="ms-menu"><input class="ms-search" placeholder="Search '+pool.length+' files…"><div class="ms-list">'+opts+'</div><div class="ms-mfoot"><span>'+sel.length+' selected</span><button class="btn sm" data-msdone>Done</button></div></div>';
+  }
+  return '<div class="ms'+(open?' open':'')+'"><div class="ms-lbl">'+label+'</div>'+
+    '<div class="ms-field" data-msopen="'+key+'"><div class="ms-chips">'+chips+'</div><span class="ms-caret">▾</span></div>'+menu+'</div>';
+}
+function fontColor(pt,nm){ var k=pt+'|'+nm; if(state.optColors[k]!=null) return state.optColors[k]; return (FONT_META[nm]&&FONT_META[nm].hex)||'1d2a5c'; }
+function roleTagInline(r){ if(!r) return ''; var c=r==='Stroke'?'r-stroke':r==='Fill'?'r-fill':'r-img'; return '<span class="role-tag '+c+'">'+r+'</span>'; }
+function fontAttach(pt){
+  var fam=state.optFamily[pt] || FAMILIES[0];
+  var assets=ASSET_LIB.filter(function(a){return a.family===fam;});
+  var rows=assets.map(function(a){
+    var isFont=a.type!=='PNG', hex=isFont?fontColor(pt,a.name):'';
+    if(isFont){
+      return '<div class="fc-row"><span class="fc-sw" style="background:#'+hex+'"></span>'+
+        '<span class="fc-nm">'+a.name+'</span>'+
+        '<span class="fc-hash">#</span><input class="inp fc-in" data-fc="'+pt+'|'+a.name+'" value="'+hex+'" maxlength="6" spellcheck="false"></div>';
+    }
+    return '<div class="fc-row"><span class="fc-sw fc-sw-img"></span>'+
+      '<span class="fc-nm">'+a.name+'</span></div>';
+  }).join('');
+  return '<details class="fontattach fa-collapse" open>'+
+    '<summary class="fa-h"><span class="fa-caret">▾</span> Fonts &amp; Images</summary>'+
+    '<div class="fa-sub">Add fonts &amp; digit images by <b>font family</b>. Selecting a family pulls in all associated fonts &amp; images; enter a hex color per font.</div>'+
+    '<div class="fld" style="max-width:360px"><label class="ff-lbl">Font family</label>'+
+      '<div class="sel"><select class="inp" data-optfam="'+pt+'">'+
+        FAMILIES.map(function(fm){return '<option'+(fm===fam?' selected':'')+'>'+fm+'</option>';}).join('')+'</select></div></div>'+
+    '<div class="fc-list"><div class="fc-h">Associated fonts &amp; images — hex color per font</div>'+
+      (rows||'<div class="sub">No assets in this family yet.</div>')+'</div>'+
+  '</details>';
+}
+function efield(label,val,type){
+  var inner = type==='select' ? '<select class="einp dis" disabled><option>'+(val||'')+'</option></select>' : '<input class="einp dis" value="'+(val||'')+'" placeholder="'+(val?'':'—')+'" disabled>';
+  return '<div class="ef"><div class="efl">'+label+'</div>'+inner+'</div>';
+}
+function reqBox(){ return '<label class="ef-req"><input type="checkbox" disabled> Required?</label>'; }
+function nameNumberFields(){
+  return '<div class="nnblk"><div class="nnh">Name</div><div class="efrow">'+efield('Input Type','Custom Name')+efield('Data Source','Input')+efield('Service Item','','select')+efield('Validation Source','Roster Name (10 Chars)')+reqBox()+'</div>'+
+    '<div class="nnh">Number</div><div class="efrow">'+efield('Input Type','Custom Number')+efield('Data Source','Input')+efield('Service Item','','select')+efield('Validation Source','Roster Number (2 Chars)')+reqBox()+'</div></div>';
+}
+function decBox(){ return '<span class="decbox">Decision</span>'; }
+function grpBox(){ return '<span class="grpbox">Group</span>'; }
+function svcItem(val){ return '<div class="svc-item"><div class="svl">Service Item</div><div class="svsel"><select class="einp dis" disabled><option>'+(val||'')+'</option></select></div></div>'; }
+function printingBlock(pt,label,ds){
+  return '<div class="pblk"><div class="pblk-h"><span class="ph-t">'+label+' Printing</span> '+grpBox()+svcItem('')+'</div>'+
+    '<div class="pnest"><div class="pnest-h"><span class="ph-t">Roster or Name &amp; Number</span> '+decBox()+'</div>'+
+      '<div class="pnest2"><div class="pnest2-h">'+label+' Roster Selection</div>'+
+        '<div class="efrow">'+efield('Input Type','Roster Member Select')+efield('Data Source',ds,'select')+efield('Service Item','V106300 AST N…','select')+efield('Validation Source','No Validation','select')+reqBox()+'</div></div>'+
+      '<div class="pnest2"><div class="pnest2-h"><span>Custom Name &amp; Number</span> '+grpBox()+svcItem('V106300 AST N…')+'</div>'+
+        nameNumberFields()+
+        fontAttach(pt)+
+      '</div>'+
+    '</div></div>';
+}
+function rosterJerseyBlock(){
+  return '<div class="pblk"><div class="pblk-h"><span class="ph-t">Roster Jersey</span> '+grpBox()+'</div>'+
+    '<div class="pnest"><div class="pnest-h"><span class="ph-t">Roster or Name and Number</span> '+decBox()+'</div>'+
+      '<div class="pnest2"><div class="pnest2-h">Roster Selection</div>'+
+        '<div class="efrow">'+efield('Input Type','Roster Member Select')+efield('Data Source','Minnesota Vikings - Standard','select')+efield('Service Item','','select')+efield('Validation Source','No Validation','select')+reqBox()+'</div></div>'+
+      '<div class="pnest2"><div class="pnest2-h"><span>Custom Name &amp; Number</span> '+grpBox()+svcItem('')+'</div>'+
+        nameNumberFields()+'</div>'+
+      fontAttach('NFL')+
+      '<div class="pnest2"><div class="pnest2-h">Badge Selection</div>'+
+        '<div class="efrow">'+efield('Input Type','Badge Select')+efield('Data Source','AC Milan 3704 cup 10726261 badges','select')+efield('Service Item','','select')+efield('Validation Source','No Validation','select')+reqBox()+'</div></div>'+
+    '</div></div>';
+}
+function editAssemblyOptionModal(i){
+  var o=OPT_ROWS[i];
+  var inner;
+  if(o.layout==='roster'){
+    inner='<div class="efrow top">'+efield('Assembly Option Name',o.label)+efield('Structure Template',o.struct,'select')+'</div>'+
+      '<div class="om-struct-title"><span class="ph-t">'+o.struct+'</span> '+grpBox()+'</div>'+
+      rosterJerseyBlock()+
+      '<div class="om-note">Any update to these options will modify <b>0</b> base products and <b>843</b> hero products</div>';
+  } else {
+    inner='<div class="efrow top">'+efield('Assembly Option Name',o.label)+efield('Structure Template',o.struct,'select')+'</div>'+
+      '<div class="om-struct-title"><span class="ph-t">'+o.struct+'</span> '+decBox()+'</div>'+
+      printingBlock('LEAGUE','League','Chelsea - Standard')+
+      printingBlock('CUP','Cup','Chelsea Cup Roster - Standard')+
+      printingBlock('WSL','WSL','Chelsea WSL Roster - Standard');
+  }
+  return '<div class="optmodal"><div class="optmodal-panel">'+
+    '<div class="om-head"><h2>Edit Assembly Option</h2><button class="dwr-x" data-optclose>&times;</button></div>'+
+    '<div class="om-body">'+inner+'</div>'+
+    '<div class="om-foot"><button class="btn" data-optclose>Cancel</button><button class="btn primary" data-optclose>Update</button></div>'+
+  '</div></div>';
+}
+/* --- Font & Image Library full page (Option-Lists style) --- */
+function libPidCell(a,i){
+  var shown=a.pids.slice(0,3).map(function(p){return '<span class="pidchip">'+p+'</span>';}).join('');
+  var more=a.pids.length>3?'<span class="pidmore">+'+(a.pids.length-3)+'</span>':'';
+  return shown+more;
+}
+function fontLibraryPage(){
+  var sel=state.libSel||[];
+  var allSel=sel.length===ASSET_LIB.length;
+  function roleTag(r){ if(!r) return ''; var c=r==='Stroke'?'r-stroke':r==='Fill'?'r-fill':'r-img'; return '<span class="role-tag '+c+'">'+r+'</span>'; }
+  function assetRow(a,i,collapsed){
+    var isFont=a.type!=='PNG';
+    return '<tr class="'+(collapsed?'fam-collapsed ':'')+'" data-famrow="'+a.family+'">'+
+      '<td><div class="lib-nm-row"><span class="lib-nm">'+a.name+'</span>'+
+        ' <span class="lib-path-inline"><code>'+a.loc+'</code></span></div></td>'+
+      '<td class="lib-zcol">'+(isFont?(a.z||'1'):'<span class="lib-dash">—</span>')+'</td>'+
+      '<td><span class="tag-ot">'+a.type+'</span></td>'+
+      '<td><button class="editpen" data-editasset="'+i+'" title="Edit / replace file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="M14 6l4 4"/></svg><span>Edit / Replace</span></button></td>'+
+    '</tr>';
+  }
+  var rows=FAMILIES.map(function(fam){
+    var items=ASSET_LIB.map(function(a,i){return {a:a,i:i};}).filter(function(x){return x.a.family===fam;});
+    if(!items.length) return '';
+    var col=!!state.famCollapsed[fam];
+    var head='<tr class="fam-head" data-famhead="'+fam+'" data-famtoggle="'+fam+'"><td class="fam-cell" colspan="4"><span class="fam-caret">'+(col?'▸':'▾')+'</span><span class="fam-nm">'+fam+'</span><span class="fam-count">'+items.length+' assets</span></td></tr>';
+    return head+items.map(function(x){return assetRow(x.a,x.i,col);}).join('');
+  }).join('');
+  return '<div class="amain-pad"><div class="opt-hd"><h1>Font &amp; Image Library</h1>'+
+      '<div class="cn-wrap"><button class="createnew" id="libCreate">'+upIcon()+'Upload New</button></div></div>'+
+    '<div class="lib-toolbar">'+
+      '<div class="lt-search"><span class="lt-seg">Name <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>'+
+        '<input id="libSearch" placeholder="Search by font family">'+
+        '<span class="lt-mag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa3b0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span></div>'+
+    '</div>'+
+    '<table class="list oltable libgrid" id="libTable"><thead><tr><th>Name</th><th class="lib-zcol">Z</th><th>Type</th><th>Actions</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody></table><div class="lib-empty" id="libEmpty" style="display:none">No assets match your search.</div>'+
+    '<div class="lib-pager"><span class="lp-count">1 to '+ASSET_LIB.length+' of '+ASSET_LIB.length+'</span>'+
+      '<span class="lp-nav"><span class="lp-b">|&lsaquo;</span><span class="lp-b">&lsaquo;</span><span class="lp-page">Page 1 of 1</span><span class="lp-b">&rsaquo;</span><span class="lp-b">&rsaquo;|</span></span></div>'+
+    '</div>'+
+    libDrawerHTML();
+}
+function libDrawerHTML(){
+  var d=state.drawer; if(!d) return '';
+  var body;
+  if(d.type==='upload'){
+    var ut=state.upType||'font';
+    var isFont=ut==='font';
+    body='<div class="dwr-hd"><h3>Upload New Asset</h3><button class="dwr-x" data-dclose>&times;</button></div>'+
+      '<div class="dwr-body">'+
+        '<div class="fld"><label>Asset type</label><div class="up-toggle">'+
+          '<button class="up-t'+(isFont?' on':'')+'" data-up="font">Font file</button>'+
+          '<button class="up-t'+(!isFont?' on':'')+'" data-up="image">Image file</button></div>'+
+          '<div class="sub">'+(isFont?'Vector font — <b>.otf / .ttf</b>':'Number/digit images — <b>.png / .jpeg</b> (a directory)')+'</div></div>'+
+        '<div class="dropzone" id="dropZone"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9aa3b0" stroke-width="1.6"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>'+
+          '<div>Drag &amp; drop '+(isFont?'or <span class="lnk">choose file</span>':'a folder or <span class="lnk">choose folder</span>')+'</div>'+
+          '<div class="dz-hint">'+(isFont?'roster-block.otf':'/numbers/ folder (.png sequence)')+'</div></div>'+
+        '<div class="fld"><label>Asset name</label><input class="inp" id="upName" value="'+(isFont?'New-Font':'New-Numbers')+'"></div>'+
+        '<div class="fld"><label>Font family</label>'+
+          '<div class="sub">Select an existing font family or type to create a new one.</div>'+
+          '<div class="cb"><input class="inp" id="upFamily" placeholder="Select or Enter…" autocomplete="off">'+
+            '<span class="cb-caret">▾</span>'+
+            '<div class="cb-menu" id="upFamMenu">'+
+              '<div class="cb-create" id="upFamCreate" style="display:none"></div>'+
+              FAMILIES.map(function(fm){return '<div class="cb-opt" data-fam="'+fm+'">'+fm+'</div>';}).join('')+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        (isFont
+          ? '<div class="fld"><label>z (layer) '+tip('Default stacking / render order for this font. Higher z sits on top where elements overlap. Can be overridden per element in the configurator.')+'</label><input class="inp" id="upZ" value="1" style="max-width:120px"></div>'
+          : '')+
+      '</div>'+
+      '<div class="dwr-foot"><button class="btn" data-dclose>Cancel</button><button class="btn primary" id="upSave">Upload</button></div>';
+  } else if(d.type==='edit'){
+    var ea=ASSET_LIB[d.ai]; var eIsFont=ea.type!=='PNG';
+    body='<div class="dwr-hd"><h3>Edit / Replace Asset</h3><button class="dwr-x" data-dclose>&times;</button></div>'+
+      '<div class="dwr-body">'+
+        '<div class="fld"><label>Asset name</label><input class="inp" id="editName" value="'+ea.name+'"></div>'+
+        '<div class="fld"><label>Type</label><div><span class="tag-ot">'+ea.type+'</span></div></div>'+
+        (eIsFont?'<div class="fld"><label>z (layer) '+tip('Default stacking / render order for this font. Higher z sits on top where elements overlap.')+'</label><input class="inp" id="editZ" value="'+(ea.z||'1')+'" style="max-width:120px"></div>':'')+
+        '<div class="fld"><label>Replace file <span class="lab-sub">swap the '+(eIsFont?'OTF / TTF':'image')+' in place — keeps the same storage path &amp; associations</span></label>'+
+          '<div class="dropzone"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9aa3b0" stroke-width="1.6"><path d="M21 12.5l-8.5 8.5a4 4 0 01-6-6L15 6.5a2.5 2.5 0 014 3.5l-9 9"/></svg>'+
+            '<div>Drag &amp; drop or <span class="lnk">choose a new file</span> to replace</div>'+
+            '<div class="dz-hint">'+(eIsFont?ea.name.toLowerCase()+'.otf':'/numbers/ (png sequence)')+'</div></div></div>'+
+        '<div class="fld"><label>Storage path <span class="lab-sub">debug only — auto-generated by Iris, not editable</span></label><input class="inp mono" value="'+ea.loc+'" disabled></div>'+
+      '</div>'+
+      '<div class="dwr-foot"><button class="btn" data-dclose>Cancel</button><button class="btn primary" id="editSave">Save</button></div>';
+  } else {
+    var a=ASSET_LIB[d.ai];
+    var cur=a.pids.length?a.pids.map(function(p){return '<span class="pidchip">'+p+' <i class="rmpid2" data-pid="'+p+'">&times;</i></span>';}).join(''):'<span class="sub">None yet</span>';
+    body='<div class="dwr-hd"><h3>Associate PIDs</h3><button class="dwr-x" data-dclose>&times;</button></div>'+
+      '<div class="dwr-body"><div class="dwr-asset"><span class="lib-nm">'+a.name+'</span> <span class="tag-ot">'+a.type+'</span><div class="sub"><code>'+a.loc+'</code></div></div>'+
+        '<div class="fld"><label>Currently associated ('+a.pids.length+')</label><div class="pidwrap">'+cur+'</div></div>'+
+        '<div class="fld"><label>Add PIDs in bulk — enter one or more (comma / space / newline separated)</label>'+
+          '<textarea class="inp pidta" id="pidInput" rows="3" placeholder="e.g. 204600011, 204600012 204600013"></textarea></div>'+
+      '</div>'+
+      '<div class="dwr-foot"><button class="btn" data-dclose>Done</button><button class="btn primary" id="pidAdd">Add PIDs</button></div>';
+  }
+  return '<div class="dwr-scrim" data-dclose></div><div class="dwr">'+body+'</div>';
+}
+function renderAssembly(){
+  document.querySelectorAll('#aRail .railicon').forEach(function(ic){
+    ic.classList.toggle('on', ic.getAttribute('data-aview')===state.aview);
+  });
+  document.getElementById('assemblyMain').innerHTML = state.aview==='fonts'?fontLibraryPage():state.aview==='option'?assemblyOptionPage():assemblyOverview();
+}
+function renderKeepScroll(){ var b=document.querySelector('.om-body'); var st=b?b.scrollTop:0; renderAssembly(); var b2=document.querySelector('.om-body'); if(b2) b2.scrollTop=st; }
+function cFont(){
+  return ctxBar();
+}
+var FONT_OPTIONS_MAP={
+  LEAGUE:{NAME:['Roster-Block','Stroke-Fill','Serif'],NUMBER:['Number-PNG','Roster-Block']},
+  CUP:{NAME:['Cup-Block','Roster-Block'],NUMBER:['Number-PNG','Cup-Block']},
+  WSL:{NAME:['Stroke-Fill','Serif'],NUMBER:['Number-PNG','Serif']},
+  ROSTER:{NAME:['Roster-Block','Stroke-Fill'],NUMBER:['Number-PNG','Roster-Block']}
+};
+function tip(t){ return '<span class="tip" tabindex="0">i<span class="tipbox">'+t+'</span></span>'; }
+var FONT_META={
+  'Roster-Block':{id:70101,type:'otf',hex:'1d2a5c',loc:'/fonts/league/roster-block.otf'},
+  'Stroke-Fill':{id:70111,type:'otf',hex:'ffffff',loc:'/fonts/league/stroke-fill.otf'},
+  'Cup-Block':{id:70201,type:'ttf',hex:'1d2a5c',loc:'/fonts/cup/cup-block.ttf'},
+  'Serif':{id:70301,type:'otf',hex:'0b1f4d',loc:'/fonts/wsl/serif.otf'},
+  'Number-PNG':{id:70102,type:'png',hex:'ffcc00',loc:'/images/shared/numbers/'},
+  'Number-Serif':{id:70312,type:'png',hex:'0b1f4d',loc:'/images/wsl/numbers/'}};
+function fontMetaList(el,fonts){
+  return '<div class="fmeta">'+fonts.map(function(nm){ var m=FONT_META[nm]||{id:'—'};
+    return '<div class="fmeta-row"><div class="fmeta-main"><div class="fmeta-t"><b>'+nm+'</b></div>'+
+      '<div class="fmeta-sub">fontId <b>'+m.id+'</b></div></div></div>';
+  }).join('')+'</div>';
+}
+var MATRIX_CELLS=[['Scale X / Rotate','1'],['Rotate / Skew X','0.02'],['Rotate Z / Skew','0'],['Perspective X','-0.0005'],
+  ['Rotate X / Skew Y','0'],['Scale Y / Rotate','1'],['Rotate Z / Skew','0'],['Perspective Y','0'],
+  ['3D Tilt / Rotate','0'],['3D Tilt / Rotate','0'],['Scale Z (Depth)','1'],['Perspective Z','0'],
+  ['Translate X','0'],['Translate Y','0'],['Translate Z (Depth)','0'],['Base (Always 1)','1']];
+function matrixGrid(){
+  return '<div class="mx-grid">'+MATRIX_CELLS.map(function(c){
+    return '<div class="mx-cell"><div class="mx-l">'+c[0]+'</div><input class="inp" value="'+c[1]+'"></div>';
+  }).join('')+'</div>';
+}
+function elBlock(pt,el,d){
+  // d: {x,y,z,maxw,height,hmode,arced,arc,media,fonts}
+  var f=function(k){return 'data-fld="'+pt+'.'+el+'.'+k+'"';};
+  var etype = el==='NAME'?'text':'number';
+  var arcField = d.arced ? '<div class="pair"><div><div class="lab">arc_radius</div><input class="inp" '+f('arc')+' value="'+d.arc+'"></div><div></div></div>' : '';
+  return '<div class="elcard"><div class="elhd"><span class="eltag">'+el+'</span><span class="et-badge">'+etype+'</span>'+
+      '<label class="arc-tog"><input type="checkbox" '+(d.arced?'checked':'')+' disabled> is_arced</label></div>'+
+    '<div class="two">'+
+      '<div><div class="grp-t">Typography &amp; render</div>'+
+        '<div class="lab">Fonts</div>'+fontMetaList(el,d.fonts)+
+        '<div class="lab" style="margin-top:12px">height ('+(d.hmode==='px'?'px':'pt')+')</div><input class="inp" '+f('height')+' value="'+d.height+'" style="margin-bottom:14px">'+
+        '<div class="lab">media_file_id '+tip('Must match the currently selected media / image id for this print type. Positions are stored per media element.')+'</div><input class="inp" value="'+d.media+'"></div>'+
+      '<div><div class="grp-t">Position &amp; size</div>'+
+        '<div class="pair"><div><div class="lab">x</div><input class="inp" '+f('x')+' value="'+d.x+'"></div>'+
+          '<div><div class="lab">y</div><input class="inp" '+f('y')+' value="'+d.y+'"></div></div>'+
+        '<div class="pair"><div><div class="lab">z (layer) '+tip('Render/stacking order. NAME and NUMBER are drawn in z order — a higher z sits on top where they overlap, so this sets whether the name or number renders above the other.')+'</div><input class="inp" value="'+d.z+'"></div>'+
+          '<div><div class="lab">max_width</div><input class="inp" '+f('maxw')+' value="'+d.maxw+'"></div></div>'+
+        '<div class="lab">gravity '+tip('Directional anchor for rendering. SOUTH anchors the text to its bottom edge so it grows upward from a fixed baseline; another direction would anchor and grow from that side.')+'</div><div class="sel"><select class="inp" disabled><option>SOUTH</option></select></div>'+
+        arcField+'</div>'+
+    '</div>'+
+    '<details class="na-collapse"><summary><span class="nc-caret">▸</span> NA-only requirements <span class="na-tag">optional</span> <span class="nc-hint">expand only if configuring NA (angled images, 3D)</span></summary>'+
+      '<div class="na-block">'+
+        '<div class="na-ctrls">'+
+          '<div class="ef"><div class="lab">font_size</div><input class="inp" value="'+(el==='NUMBER'?'200':'120')+'"></div>'+
+          '<div class="ef"><div class="lab">color</div><input type="color" class="cin" value="#'+(el==='NUMBER'?'ffffff':'1d2a5c')+'"></div>'+
+          '<div class="ef"><div class="lab">stroke</div><input type="color" class="cin" value="#111111"></div>'+
+          '<div class="ef"><div class="lab">stroke_width</div><input class="inp" value="3"></div>'+
+          '<div class="ef"><div class="lab">rotation</div><div class="sld"><input type="range" min="0" max="360" value="0"><span>0</span></div></div>'+
+          '<div class="ef"><div class="lab">clean_level</div><div class="sld"><input type="range" min="0" max="1" step="0.1" value="0.9"><span>0.9</span></div></div>'+
+        '</div>'+
+        '<details class="na-xform"><summary><span class="xf-show">Show transform</span><span class="xf-hide">Hide transform</span></summary>'+
+          '<div class="mx-title">matrix3d_transform '+tip('4×4 CSS matrix3d applied client-side to map the flat text/number onto the angled NA product image (front/back angled views). Leave at identity for FI flat-back.')+'</div>'+
+          matrixGrid()+'</details>'+
+      '</div></details></div>';
+}
+var FI_IDS={LEAGUE:{nameMedia:50101,nameFont:70101,numMedia:50102,numFont:70102},
+            CUP:{nameMedia:50201,nameFont:70201,numMedia:50202,numFont:70202},
+            WSL:{nameMedia:50301,nameFont:70301,numMedia:50302,numFont:70302},
+            ROSTER:{nameMedia:76915813,nameFont:70101,numMedia:76915813,numFont:70102}};
+function naElementCard(label,rot){
+  return '<div class="elcard na-only"><div class="elhd"><span class="eltag alt">'+label+'</span><span class="na-tag">NA · optional</span></div>'+
+    '<div class="na-ctrls">'+
+      '<div class="ef"><div class="lab">text</div><input class="inp" value="00"></div>'+
+      '<div class="ef"><div class="lab">font_size</div><input class="inp" value="60"></div>'+
+      '<div class="ef"><div class="lab">color</div><input type="color" class="cin" value="#ffffff"></div>'+
+      '<div class="ef"><div class="lab">stroke</div><input type="color" class="cin" value="#111111"></div>'+
+      '<div class="ef"><div class="lab">stroke_width</div><input class="inp" value="1"></div>'+
+      '<div class="ef"><div class="lab">rotation</div><div class="sld"><input type="range" min="0" max="360" value="'+rot+'"><span>'+rot+'</span></div></div>'+
+      '<div class="ef"><div class="lab">clean_level</div><div class="sld"><input type="range" min="0" max="1" step="0.1" value="0.9"><span>0.9</span></div></div>'+
+    '</div>'+
+    '<details class="na-xform"><summary><span class="xf-show">Show transform</span><span class="xf-hide">Hide transform</span></summary>'+
+      '<div class="mx-title">matrix3d_transform</div>'+matrixGrid()+'</details></div>';
+}
+function specBody(name){
+  var id=FI_IDS[name];
+  var fonts=FONT_OPTIONS_MAP[name];
+  return elBlock(name,'NAME',{x:1000,y:437,z:1,maxw:900,height:72,hmode:'pt',arced:true,arc:820,media:id.nameMedia,fonts:fonts.NAME})+
+    elBlock(name,'NUMBER',{x:1000,y:980,z:1,maxw:700,height:560,hmode:'px',arced:false,arc:'—',media:id.numMedia,fonts:fonts.NUMBER})+
+    '<details class="na-collapse na-elements"><summary><span class="nc-caret">▸</span> NA-only elements — sleeves &amp; shoulder numbers <span class="na-tag">optional</span></summary>'+
+      '<div class="na-block">'+
+        naElementCard('NUMBER SLEEVE RIGHT',35)+
+        naElementCard('NUMBER SLEEVE LEFT',61)+
+        '<div class="add-el"><button class="btn sm">+ Add text</button><button class="btn sm">+ Add image</button></div>'+
+      '</div></details>';
+}
+function specPreview(name){
+  return '<aside class="spec-preview">'+
+      '<div class="pv-t">Preview</div>'+
+      '<div class="ref" style="text-transform:none;letter-spacing:normal;margin:-6px 0 10px">reference canvas 2000×2000</div>'+
+      '<div class="pv-art">'+jerseyNN('YOUR NAME','00',200)+'</div>'+
+      '<div class="pv-rows"><div class="pv-row"><span>Name</span><input class="inp" value="Your Name" placeholder="Your Name"></div>'+
+        '<div class="pv-row"><span>Number</span><input class="inp" value="00" placeholder="00"></div></div>'+
+    '</aside>';
+}
+var SPEC_LABELS={LEAGUE:'LEAGUE',CUP:'CUP',WSL:'WSL',ROSTER:'Roster Jersey · Roster or Custom Name and Number'};
+function specAccordion(name){
+  return '<div class="acc"><div class="ah" data-acc><span class="car">⌄</span> '+(SPEC_LABELS[name]||name)+'</div><div class="ac">'+
+      '<div class="spec-wrap"><div class="spec-main">'+specBody(name)+'</div>'+specPreview(name)+'</div>'+
+    '</div></div>';
+}
+function cSpec(){
+  if(PRODUCT.config==='roster') return specAccordion('ROSTER');
+  return specAccordion('LEAGUE')+specAccordion('CUP')+specAccordion('WSL');
+}
+function cSetup(){
+  return cFont()+cSpec();
+}
+function bodyFor(step){ return step==='setup'?cSetup():''; }
+
+function footHTML(){
+  if(!state.saved){
+    return '<div class="right"><button class="btn" data-close>Cancel</button>'+
+      '<button class="btn primary" id="saveBtn">Verify configuration</button></div>';
+  }
+  var closeLbl=state.dirty?'Cancel':'Close';
+  return '<div class="right"><button class="btn" data-close>'+closeLbl+'</button>'+
+    '<button class="btn primary" id="saveBtn"'+(state.dirty?'':' disabled')+'>Save configuration</button></div>';
+}
+
+function renderA(){
+  document.getElementById('stepperA').style.display='none';
+  document.getElementById('bodyA').innerHTML=bodyFor(state.step);
+  document.getElementById('footA').innerHTML=footHTML();
+}
+function render(){
+  document.getElementById('shellA').classList.toggle('open', state.open);
+  document.getElementById('scrim').classList.toggle('show', state.open);
+  if(state.open) renderA();
+  if(document.getElementById('pageProduct').style.display!=='none') renderProductTab();
+}
+function openConfigurator(){ state.open=true; state.step='setup'; state.dirty=false; render(); }
+function markDirty(e){
+  if(!state.open||state.dirty) return;
+  if(!e.target.closest || !e.target.closest('#bodyA')) return;
+  state.dirty=true;
+  var sb=document.getElementById('saveBtn'); if(sb) sb.disabled=false;
+  var closeBtn=document.querySelector('#footA [data-close]'); if(closeBtn) closeBtn.textContent='Cancel';
+}
+function closeModal(){ state.open=false; render(); }
+
+/* ===== delegated events ===== */
+document.body.addEventListener('input', markDirty);
+document.body.addEventListener('change', markDirty);
+document.body.addEventListener('change', function(e){
+  var of=e.target.closest && e.target.closest('[data-optfam]');
+  if(of){ state.optFamily[of.getAttribute('data-optfam')]=e.target.value; renderKeepScroll(); }
+});
+/* font-family combobox: filter options + toggle "Create option" as user types */
+document.body.addEventListener('input', function(e){
+  if(e.target.id!=='upFamily') return;
+  var q=e.target.value.trim().toLowerCase(), exact=false;
+  document.querySelectorAll('#upFamMenu .cb-opt').forEach(function(o){
+    var t=o.getAttribute('data-fam'); var m=!q || t.toLowerCase().indexOf(q)>-1;
+    o.style.display=m?'':'none'; if(t.toLowerCase()===q) exact=true;
+  });
+  var cr=document.getElementById('upFamCreate');
+  if(cr){ if(e.target.value.trim() && !exact){ cr.style.display=''; cr.textContent='Create option "'+e.target.value.trim()+'"'; } else cr.style.display='none'; }
+  var cb=e.target.closest('.cb'); if(cb) cb.classList.add('open');
+});
+document.body.addEventListener('input', function(e){
+  if(e.target.classList && e.target.classList.contains('fc-in')){
+    var k=e.target.getAttribute('data-fc'); var v=e.target.value.replace(/[^0-9a-fA-F]/g,'').slice(0,6);
+    if(v!==e.target.value) e.target.value=v;
+    state.optColors[k]=v;
+    var sw=e.target.parentElement.querySelector('.fc-sw'); if(sw && v.length===6) sw.style.background='#'+v;
+    return;
+  }
+  if(e.target.id!=='libSearch') return;
+  var q=e.target.value.trim().toLowerCase(), shown=0, byFam={};
+  document.querySelectorAll('#libTable tbody tr[data-famrow]').forEach(function(r){
+    var fam=r.getAttribute('data-famrow')||'';
+    var m=!q || (r.textContent+' '+fam).toLowerCase().indexOf(q)>-1;
+    r.style.display=m?'':'none'; if(m){ shown++; byFam[fam]=true; }
+  });
+  document.querySelectorAll('#libTable tbody tr[data-famhead]').forEach(function(h){
+    h.style.display = byFam[h.getAttribute('data-famhead')] ? '' : 'none';
+  });
+  var empty=document.getElementById('libEmpty'); if(empty) empty.style.display=shown?'none':'';
+});
+document.body.addEventListener('click', function(e){
+  // font-family combobox
+  if(e.target.id==='upFamily'||e.target.closest('.cb-caret')){ var cbx=e.target.closest('.cb'); if(cbx) cbx.classList.toggle('open'); return; }
+  var cbo=e.target.closest('.cb-opt'); if(cbo){ var inp=document.getElementById('upFamily'); if(inp) inp.value=cbo.getAttribute('data-fam'); var cb1=cbo.closest('.cb'); if(cb1) cb1.classList.remove('open'); return; }
+  if(e.target.id==='upFamCreate'){ var cb2=e.target.closest('.cb'); if(cb2) cb2.classList.remove('open'); return; }
+  if(!e.target.closest('.cb')){ document.querySelectorAll('.cb.open').forEach(function(c){c.classList.remove('open');}); }
+  var ftog=e.target.closest('[data-famtoggle]'); if(ftog){ var fm=ftog.getAttribute('data-famtoggle'); state.famCollapsed[fm]=!state.famCollapsed[fm]; renderAssembly(); return; }
+  var prow=e.target.closest('.prow'); if(prow){ showProduct(prow.getAttribute('data-pid')); return; }
+  var ari=e.target.closest('#aRail .railicon'); if(ari){ state.aview=ari.getAttribute('data-aview'); state.libSel=[]; state.bulkPids=[]; state.drawer=null; state.optModal=null; renderAssembly(); return; }
+  var eo=e.target.closest('[data-editopt]'); if(eo){ state.optModal=+eo.getAttribute('data-editopt'); renderAssembly(); return; }
+  if(e.target.closest('[data-optclose]')){ state.optModal=null; state.faOpen=null; renderAssembly(); return; }
+  var mrm=e.target.closest('[data-msrm]'); if(mrm){ var p2=mrm.getAttribute('data-msrm').split('|'); var a=state.optFonts[p2[0]][p2[1]]; var i2=a.indexOf(p2[2]); if(i2>-1) a.splice(i2,1); renderKeepScroll(); return; }
+  var mop=e.target.closest('[data-msopt]'); if(mop){ var pr=mop.getAttribute('data-msopt').split('|'); var arr=state.optFonts[pr[0]][pr[1]]; var ix=arr.indexOf(pr[2]);
+     if(ix>-1) arr.splice(ix,1); else arr.push(pr[2]); renderKeepScroll(); return; }
+  if(e.target.closest('[data-msdone]')){ state.faOpen=null; renderKeepScroll(); return; }
+  var mo=e.target.closest('[data-msopen]'); if(mo){ var mk=mo.getAttribute('data-msopen'); state.faOpen=state.faOpen===mk?null:mk; renderKeepScroll(); return; }
+  if(e.target.closest('#libCreate')){ state.drawer={type:'upload'}; state.upType='font'; state.upNewFam=false; renderAssembly(); return; }
+  var eas=e.target.closest('[data-editasset]'); if(eas){ state.drawer={type:'edit',ai:+eas.getAttribute('data-editasset')}; renderAssembly(); return; }
+  if(e.target.id==='editSave'){ var ea=ASSET_LIB[state.drawer.ai]; var nm=(document.getElementById('editName')||{}).value; if(nm) ea.name=nm; var ez=document.getElementById('editZ'); if(ez) ea.z=ez.value||'1'; state.drawer=null; renderAssembly(); return; }
+  var ep=e.target.closest('[data-editai]'); if(ep){ state.drawer={type:'pids',ai:+ep.getAttribute('data-editai')}; state.pidDraft=[]; renderAssembly(); return; }
+  if(e.target.closest('[data-dclose]')){ state.drawer=null; state.pidDraft=[]; renderAssembly(); return; }
+  var ut=e.target.closest('.up-t'); if(ut){ state.upType=ut.getAttribute('data-up'); renderAssembly(); return; }
+  if(e.target.id==='upSave'){ var nm=(document.getElementById('upName')||{}).value||'New-Asset'; var img=state.upType==='image';
+     var fam=((document.getElementById('upFamily')||{}).value||'').trim()||FAMILIES[0];
+     if(FAMILIES.indexOf(fam)<0) FAMILIES.push(fam);
+     var uz=img?undefined:((document.getElementById('upZ')||{}).value||'1');
+     var asset={name:nm,type:img?'PNG':'OTF',kind:img?'Digit image dir':'Font',family:fam,role:img?'Digit image':'Fill',loc:img?('/images/new/'+nm.toLowerCase()+'/'):'/fonts/new/'+nm.toLowerCase()+'.otf',by:'svenkatesh@fanatics.com',when:'today',pids:[]};
+     if(!img) asset.z=uz;
+     ASSET_LIB.push(asset);
+     state.drawer=null; state.upNewFam=false; renderAssembly(); return; }
+  if(e.target.id==='pidAdd'){ var a=ASSET_LIB[state.drawer.ai]; var box=document.getElementById('pidInput');
+     var raw=box?box.value:''; var entered=raw.split(/[\s,]+/).map(function(s){return s.trim();}).filter(Boolean);
+     entered.forEach(function(pid){ if(a.pids.indexOf(pid)<0) a.pids.push(pid); }); renderAssembly(); return; }
+  var rp2=e.target.closest('.rmpid2'); if(rp2){ var a2=ASSET_LIB[state.drawer.ai]; var pid3=rp2.getAttribute('data-pid'); a2.pids=a2.pids.filter(function(p){return p!==pid3;}); renderAssembly(); return; }
+  var lcb=e.target.closest('.libcb'); if(lcb){ var li=+lcb.getAttribute('data-ai'); var p=state.libSel.indexOf(li);
+     if(p>-1) state.libSel.splice(p,1); else state.libSel.push(li); renderAssembly(); return; }
+  if(e.target.id==='libAll'){ state.libSel = state.libSel.length===ASSET_LIB.length?[]:ASSET_LIB.map(function(_,i){return i;}); renderAssembly(); return; }
+  var bp=e.target.closest('.bpid'); if(bp){ var pid=bp.getAttribute('data-bpid'); var q=state.bulkPids.indexOf(pid);
+     if(q>-1) state.bulkPids.splice(q,1); else state.bulkPids.push(pid); renderAssembly(); return; }
+  if(e.target.id==='bulkApply'){ if(state.bulkPids.length){ state.libSel.forEach(function(ai){
+       state.bulkPids.forEach(function(pid){ if(ASSET_LIB[ai].pids.indexOf(pid)<0) ASSET_LIB[ai].pids.push(pid); }); });
+       state.libSel=[]; state.bulkPids=[]; renderAssembly(); } return; }
+  if(e.target.id==='bulkClear'){ state.libSel=[]; state.bulkPids=[]; renderAssembly(); return; }
+  var pt=e.target.closest('#ptabs .pt'); if(pt){ var k=pt.getAttribute('data-ptab');
+     if(k!=='assemblies') return; /* only Assemblies is wired up in this prototype — other tabs are inert */
+     productTab=k; if(state.open) closeModal(); else renderProductTab(); return; }
+  if(e.target.closest('#assemblyConfigure')){ openConfigurator(); return; }
+  var t=e.target.closest('[data-close]'); if(t){ closeModal(); return; }
+  var acc=e.target.closest('[data-acc]'); if(acc){ acc.parentElement.classList.toggle('collapsed'); return; }
+  var exp=e.target.closest('[data-exp]'); if(exp){ var row=document.getElementById(exp.getAttribute('data-exp'));
+     var on=row.style.display==='none'; row.style.display=on?'table-row':'none'; exp.textContent=on?'−':'+'; return; }
+  var sb=e.target.closest('.src-btn'); if(sb){ state.assetSrc=sb.getAttribute('data-src'); render(); return; }
+  var lu=e.target.closest('.lib-use'); if(lu){ var luOn=lu.classList.toggle('on'); lu.textContent=luOn?'✓ In use':'Use'; return; }
+  if(e.target.id==='saveBtn'){ state.saved=true; closeModal(); return; }
+});
+
+showBrowse(); render();
+</script>
+</body>
+</html>
