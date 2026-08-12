@@ -1215,13 +1215,9 @@ function elBlock(pt,el,d){
         '<div class="lab">gravity '+tip('Directional anchor for rendering. SOUTH anchors the text to its bottom edge so it grows upward from a fixed baseline; another direction would anchor and grow from that side.')+'</div><div class="sel"><select class="inp" disabled><option>SOUTH</option></select></div>'+
         arcField+'</div>'+
     '</div>'+
-    '<details class="na-collapse"><summary><span class="nc-caret">▸</span> NA-only requirements <span class="na-tag">optional</span> <span class="nc-hint">expand only if configuring NA (angled images, 3D)</span></summary>'+
+    '<details class="na-collapse"><summary><span class="nc-caret">▸</span> Additional requirements <span class="na-tag">optional</span> <span class="nc-hint">expand only if configuring NA (angled images, 3D)</span></summary>'+
       '<div class="na-block">'+
         '<div class="na-ctrls">'+
-          '<div class="ef"><div class="lab">font_size</div><input class="inp" value="'+(el==='NUMBER'?'200':'120')+'"></div>'+
-          '<div class="ef"><div class="lab">color</div><input type="color" class="cin" value="#'+(el==='NUMBER'?'ffffff':'1d2a5c')+'"></div>'+
-          '<div class="ef"><div class="lab">stroke</div><input type="color" class="cin" value="#111111"></div>'+
-          '<div class="ef"><div class="lab">stroke_width</div><input class="inp" value="3"></div>'+
           '<div class="ef"><div class="lab">rotation</div><div class="sld"><input type="range" min="0" max="360" value="0"><span>0</span></div></div>'+
           '<div class="ef"><div class="lab">clean_level</div><div class="sld"><input type="range" min="0" max="1" step="0.1" value="0.9"><span>0.9</span></div></div>'+
         '</div>'+
@@ -1238,10 +1234,6 @@ function naElementCard(label,rot){
   return '<div class="elcard na-only"><div class="elhd"><span class="eltag alt">'+label+'</span><span class="na-tag">NA · optional</span></div>'+
     '<div class="na-ctrls">'+
       '<div class="ef"><div class="lab">text</div><input class="inp" value="00"></div>'+
-      '<div class="ef"><div class="lab">font_size</div><input class="inp" value="60"></div>'+
-      '<div class="ef"><div class="lab">color</div><input type="color" class="cin" value="#ffffff"></div>'+
-      '<div class="ef"><div class="lab">stroke</div><input type="color" class="cin" value="#111111"></div>'+
-      '<div class="ef"><div class="lab">stroke_width</div><input class="inp" value="1"></div>'+
       '<div class="ef"><div class="lab">rotation</div><div class="sld"><input type="range" min="0" max="360" value="'+rot+'"><span>'+rot+'</span></div></div>'+
       '<div class="ef"><div class="lab">clean_level</div><div class="sld"><input type="range" min="0" max="1" step="0.1" value="0.9"><span>0.9</span></div></div>'+
     '</div>'+
@@ -1253,7 +1245,7 @@ function specBody(name){
   var fonts=FONT_OPTIONS_MAP[name];
   return elBlock(name,'NAME',{x:1000,y:437,z:1,maxw:900,height:72,hmode:'pt',arced:true,arc:820,media:id.nameMedia,fonts:fonts.NAME})+
     elBlock(name,'NUMBER',{x:1000,y:980,z:1,maxw:700,height:560,hmode:'px',arced:false,arc:'—',media:id.numMedia,fonts:fonts.NUMBER})+
-    '<details class="na-collapse na-elements"><summary><span class="nc-caret">▸</span> NA-only elements — sleeves &amp; shoulder numbers <span class="na-tag">optional</span></summary>'+
+    '<details class="na-collapse na-elements"><summary><span class="nc-caret">▸</span> Other elements — sleeves &amp; shoulder numbers <span class="na-tag">optional</span></summary>'+
       '<div class="na-block">'+
         naElementCard('NUMBER SLEEVE RIGHT',35)+
         naElementCard('NUMBER SLEEVE LEFT',61)+
