@@ -562,6 +562,40 @@
   .ph{display:inline-block;background:#fff3cd;border:1px solid #f0d98a;border-radius:4px;padding:1px 7px;font-size:12px;color:#7a5b00}
   .spec-wrap{display:flex;gap:24px;align-items:flex-start}
   .spec-main{flex:1;min-width:0}
+  /* element-based configurator */
+  .cfg-media{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:18px}
+  .cfg-media-note{margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .cfg-els-h{font-size:15px;font-weight:600;color:#2a3140;margin:4px 0 10px}
+  .cfg-els{display:flex;flex-direction:column;gap:14px}
+  .cfg-el{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0;background:#fff}
+  .cfg-el-hd{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed var(--line)}
+  .cfg-el-hd .ef{min-width:150px}
+  .cfg-el-hd .ef-grow{flex:1;min-width:180px}
+  .el-rm{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:8px;width:34px;height:34px;font-size:20px;line-height:1;color:#9aa3b0;cursor:pointer}
+  .el-rm:hover{color:#c0392b;border-color:#e6b0a8}
+  .arc-tog2{display:flex;align-items:center;gap:7px;font-size:13px;color:#3a4150;padding-top:22px}
+  .addel-btn{margin-top:16px}
+  .cfg-empty{border:1px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--muted);font-size:13.5px}
+  .ms .fsw{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.15);vertical-align:-2px;margin-right:6px}
+  .ms .fid{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;margin-left:6px}
+  /* printing-style tabs */
+  .cfg-styletabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .cst-lbl{font-size:13px;font-weight:600;color:#2a3140;margin-right:4px}
+  .cst{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 16px;font-size:13px;color:#3a4150;cursor:pointer}
+  .cst:hover{border-color:#b9c4ef}
+  .cst.on{background:#2f5fb0;border-color:#2f5fb0;color:#fff;font-weight:600}
+  /* selected-font cards (side by side) */
+  .fcards{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .fcard{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px 7px 11px}
+  .fcard .fsw{margin-right:0}
+  .fsw.dsw{background:#eef1f7;color:#5b6b8c;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,monospace}
+  .fcard-t{line-height:1.15}
+  .fcard-nm{font-size:13px;color:#2a3140;font-weight:600}
+  .fcard-id{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .fcard-rm{cursor:pointer;color:#9aa3b0;font-size:17px;line-height:1;padding:0 2px}
+  .fcard-rm:hover{color:#c0392b}
+  .fcard-add{border:1px dashed var(--line);background:#f9fafd;border-radius:9px;padding:8px 14px;font-size:13px;color:#2f5fb0;cursor:pointer;font-weight:600}
+  .fcard-add:hover{border-color:#b9c4ef;background:#f4f6fb}
   .spec-preview{flex:0 0 240px;position:sticky;top:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
   .pv-t{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:left;margin-bottom:10px}
   .pv-art{background:#f4f6fb;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;justify-content:center}
@@ -873,7 +907,8 @@ document.getElementById('navAssemblies').addEventListener('click', function(){ s
 var STEPS=[{k:'setup',l:'Setup &amp; Spec Configuration'}];
 var state={ open:false, step:'setup', saved:false, dirty:false, assetSrc:'upload', aview:'overview', libSel:[], bulkPids:[], drawer:null, upType:'font', pidDraft:[], optModal:null,
   optFonts:{ LEAGUE:{name:['Roster-Block','Stroke-Fill'],number:['Number-PNG']}, CUP:{name:['Cup-Block'],number:['Number-PNG']}, WSL:{name:['Serif'],number:['Number-Serif']}, NFL:{name:['Roster-Block','Stroke-Fill'],number:['Number-PNG']} }, faOpen:null, optColors:{}, upNewFam:false, famCollapsed:{},
-  optFamily:{ LEAGUE:'English Premier League', CUP:'English Premier League', WSL:"Women's Super League", NFL:'English Premier League' }, optSel:{} };
+  optFamily:{ LEAGUE:'English Premier League', CUP:'English Premier League', WSL:"Women's Super League", NFL:'English Premier League' }, optSel:{},
+  cfgStyle:'LEAGUE', cfgByStyle:{}, cfgFontOpen:null };
 function stepIndex(k){ for(var i=0;i<STEPS.length;i++) if(STEPS[i].k===k) return i; return 0; }
 
 function ctxBar(){ return '<div class="ctx">Configuring <b>PID '+PRODUCT.pid+'</b> · '+PRODUCT.name+'</div>'; }
@@ -1241,36 +1276,107 @@ function naElementCard(label,rot){
     '<details class="na-xform"><summary><span class="xf-show">Show transform</span><span class="xf-hide">Hide transform</span></summary>'+
       '<div class="mx-title">matrix3d_transform</div>'+matrixGrid()+'</details></div>';
 }
-function specBody(name){
-  var id=FI_IDS[name];
-  var fonts=FONT_OPTIONS_MAP[name];
-  return elBlock(name,'NAME',{x:1000,y:437,z:1,maxw:900,height:72,hmode:'pt',arced:true,arc:820,media:id.nameMedia,fonts:fonts.NAME})+
-    elBlock(name,'NUMBER',{x:1000,y:980,z:1,maxw:700,height:560,hmode:'px',arced:false,arc:'—',media:id.numMedia,fonts:fonts.NUMBER})+
-    '<details class="na-collapse na-elements"><summary><span class="nc-caret">▸</span> Other elements — sleeves &amp; shoulder numbers <span class="na-tag">optional</span></summary>'+
-      '<div class="na-block">'+
-        naElementCard('NUMBER SLEEVE RIGHT',35)+
-        naElementCard('NUMBER SLEEVE LEFT',61)+
-        '<div class="add-el"><button class="btn sm">+ Add text</button><button class="btn sm">+ Add image</button></div>'+
-      '</div></details>';
+/* ===== element-based configurator ===== */
+var CUSTOM_MEDIA=[
+  {id:'50101',label:'Custom — Back (flat)'},
+  {id:'50102',label:'Custom — Back number'},
+  {id:'76915813',label:'Custom — NA angled (front/back)'}];
+function hexOf(nm){ return (FONT_META[nm]&&FONT_META[nm].hex)||'1d2a5c'; }
+function fontIdOf(nm){ return (FONT_META[nm]&&FONT_META[nm].id)||'—'; }
+function productFamilies(){ return PRODUCT.config==='roster'?['English Premier League']:FAMILIES.slice(); }
+function availFonts(){ var fams=productFamilies(); return ASSET_LIB.filter(function(a){return a.type!=='PNG' && fams.indexOf(a.family)>-1;}); }
+function availDigits(){ var fams=productFamilies(); return ASSET_LIB.filter(function(a){return a.type==='PNG' && fams.indexOf(a.family)>-1;}); }
+function numberPngDefault(){ var d=availDigits(); return d.length?[d[0].name]:['Number-PNG']; }
+function defaultEl(type){ type=type||'Text';
+  return {label:'',type:type,roster:type==='Number'?'Number':'Name',fonts:type==='Number'?numberPngDefault():[],x:'1000',y:'437',height:'72',rotation:'0',gravity:'SOUTH',z:'1',clean:'0.9',arced:false,arc:'820'}; }
+/* printing styles — per-style config */
+function cfgStyles(){ return PRODUCT.config==='roster'?[['ROSTER','Roster']]:[['LEAGUE','League'],['CUP','Cup'],['WSL',"Women's (WSL)"]]; }
+function curCfg(){ var st=state.cfgStyle; if(!state.cfgByStyle[st]) state.cfgByStyle[st]={media:CUSTOM_MEDIA[0].id,els:[defaultEl('Text')]}; return state.cfgByStyle[st]; }
+function curEls(){ return curCfg().els; }
+function styleTabs(){
+  var styles=cfgStyles();
+  return '<div class="cfg-styletabs"><span class="cst-lbl">Printing style '+tip('Fonts &amp; anchor setup differ by printing style. Configure each style separately; shared fonts reuse the same anchor points.')+'</span>'+
+    styles.map(function(s){return '<button class="cst'+(s[0]===state.cfgStyle?' on':'')+'" data-cfgstyle="'+s[0]+'">'+s[1]+'</button>';}).join('')+'</div>';
 }
-function specPreview(name){
-  return '<aside class="spec-preview">'+
-      '<div class="pv-t">Preview</div>'+
-      '<div class="ref" style="text-transform:none;letter-spacing:normal;margin:-6px 0 10px">reference canvas 2000×2000</div>'+
-      '<div class="pv-art">'+jerseyNN('YOUR NAME','00',200)+'</div>'+
-      '<div class="pv-rows"><div class="pv-row"><span>Name</span><input class="inp" value="Your Name" placeholder="Your Name"></div>'+
-        '<div class="pv-row"><span>Number</span><input class="inp" value="00" placeholder="00"></div></div>'+
-    '</aside>';
+function mediaSelector(){
+  var media=curCfg().media;
+  return '<div class="cfg-media"><label class="ff-lbl">Custom media / image '+tip('Only custom media IDs are listed. The elements you add below are anchored to the image you pick here.')+'</label>'+
+    '<div class="sel" style="max-width:440px"><select class="inp" id="cfgMedia">'+
+      CUSTOM_MEDIA.map(function(m){return '<option value="'+m.id+'"'+(m.id===media?' selected':'')+'>'+m.label+' · id '+m.id+'</option>';}).join('')+
+    '</select></div></div>';
 }
-var SPEC_LABELS={LEAGUE:'LEAGUE',CUP:'CUP',WSL:'WSL',ROSTER:'Roster Jersey · Roster or Custom Name and Number'};
-function specAccordion(name){
-  return '<div class="acc"><div class="ah" data-acc><span class="car">⌄</span> '+(SPEC_LABELS[name]||name)+'</div><div class="ac">'+
-      '<div class="spec-wrap"><div class="spec-main">'+specBody(name)+'</div>'+specPreview(name)+'</div>'+
+function elFontField(el,i){
+  var isNum=el.type==='Number';
+  var pool=isNum?availDigits():availFonts(), sel=el.fonts||[], open=state.cfgFontOpen===i;
+  var lbl=isNum?'Number image':'Fonts';
+  var tipTxt=isNum
+    ? 'Number elements render from a digit-image directory (PNG), not a text font. The product’s Number image is selected by default.'
+    : 'Only fonts from the font families selected on the option page are shown — not the full library.';
+  var cards=sel.map(function(n){
+    if(isNum) return '<div class="fcard"><span class="fsw dsw">#</span>'+
+      '<div class="fcard-t"><div class="fcard-nm">'+n+'</div><div class="fcard-id">digit image</div></div>'+
+      '<span class="fcard-rm" data-elfontrm="'+i+'|'+n+'" title="Remove">&times;</span></div>';
+    return '<div class="fcard"><span class="fsw" style="background:#'+hexOf(n)+'"></span>'+
+      '<div class="fcard-t"><div class="fcard-nm">'+n+'</div><div class="fcard-id">fontId '+fontIdOf(n)+'</div></div>'+
+      '<span class="fcard-rm" data-elfontrm="'+i+'|'+n+'" title="Remove">&times;</span></div>';}).join('');
+  var addLbl=sel.length?'▾ Change':(isNum?'+ Select number image':'+ Select fonts');
+  var addBtn='<button class="fcard-add" data-elfontopen="'+i+'">'+addLbl+'</button>';
+  var menu='';
+  if(open){
+    var opts=pool.map(function(a){var on=sel.indexOf(a.name)>-1;
+      var meta=isNum
+        ? '<span class="fsw dsw">#</span>'+a.name+' <span class="fid">'+a.family+'</span>'
+        : '<span class="fsw" style="background:#'+hexOf(a.name)+'"></span>'+a.name+' <span class="fid">fontId '+fontIdOf(a.name)+'</span>';
+      return '<div class="ms-opt'+(on?' on':'')+'" data-elfont="'+i+'|'+a.name+'"><span class="ms-box">'+(on?'✓':'')+'</span>'+meta+'</div>';}).join('');
+    var foot=isNum?'digit-image directories from the selected option families':'pre-filtered to selected option families';
+    menu='<div class="ms-menu">'+opts+'<div class="ms-mfoot"><span>'+foot+'</span><button class="btn sm" data-elfontdone>Done</button></div></div>';
+  }
+  return '<div class="ms'+(open?' open':'')+'"><div class="ms-lbl">'+lbl+' '+tip(tipTxt)+'</div>'+
+    '<div class="fcards">'+cards+addBtn+'</div>'+menu+'</div>';
+}
+function cfgPreview(){
+  return '<aside class="spec-preview"><div class="pv-t">Preview</div>'+
+    '<div class="ref" style="text-transform:none;letter-spacing:normal;margin:-6px 0 10px">reference canvas 2000×2000</div>'+
+    '<div class="pv-art">'+jerseyNN('YOUR NAME','00',200)+'</div>'+
+    '<div class="pv-rows"><div class="pv-row"><span>Name</span><input class="inp" value="Your Name" placeholder="Your Name"></div>'+
+      '<div class="pv-row"><span>Number</span><input class="inp" value="00" placeholder="00"></div></div>'+
+    '<div class="pv-note">Static reference preview of how name &amp; number render on the selected image.</div></aside>';
+}
+function elementCard(el,i){
+  var isNum=el.type==='Number';
+  var g=function(k){return 'data-elfld="'+i+'|'+k+'"';};
+  var arcBlock = isNum ? '' :
+    '<div class="pair"><div><label class="arc-tog2"><input type="checkbox" data-elarc="'+i+'" '+(el.arced?'checked':'')+'> is_arced</label></div>'+
+      (el.arced?'<div><div class="lab">arc_radius</div><input class="inp" '+g('arc')+' value="'+el.arc+'"></div>':'<div></div>')+'</div>';
+  return '<div class="elcard cfg-el">'+
+    '<div class="cfg-el-hd">'+
+      '<div class="ef"><div class="lab">Element type</div><div class="sel"><select class="inp" data-eltype="'+i+'"><option'+(el.type==='Text'?' selected':'')+'>Text</option><option'+(isNum?' selected':'')+'>Number</option></select></div></div>'+
+      '<div class="ef"><div class="lab">Roster type '+tip('Backend (PDS) classification used for sorting &amp; structure — not surfaced to shoppers. Kept for backend compatibility.')+'</div><div class="sel"><select class="inp" data-elroster="'+i+'"><option'+(el.roster==='Name'?' selected':'')+'>Name</option><option'+(el.roster==='Number'?' selected':'')+'>Number</option></select></div></div>'+
+      '<div class="ef ef-grow"><div class="lab">Label <span class="lab-sub">optional · admin only</span></div><input class="inp" data-ellabel="'+i+'" value="'+(el.label||'')+'" placeholder="e.g. back name, sleeve"></div>'+
+      '<button class="el-rm" data-elremove="'+i+'" title="Remove element">&times;</button>'+
+    '</div>'+
+    '<div class="two">'+
+      '<div><div class="grp-t">Fonts &amp; size</div>'+
+        elFontField(el,i)+
+        '<div class="lab" style="margin-top:12px">height (pt)</div><input class="inp" '+g('height')+' value="'+el.height+'"></div>'+
+      '<div><div class="grp-t">Position &amp; render</div>'+
+        '<div class="pair"><div><div class="lab">x</div><input class="inp" '+g('x')+' value="'+el.x+'"></div>'+
+          '<div><div class="lab">y</div><input class="inp" '+g('y')+' value="'+el.y+'"></div></div>'+
+        '<div class="pair"><div><div class="lab">rotation</div><input class="inp" '+g('rotation')+' value="'+el.rotation+'"></div>'+
+          '<div><div class="lab">z (layer) '+tip('Render/stacking order — a higher z renders on top where elements overlap (e.g. a name sitting above a number).')+'</div><input class="inp" '+g('z')+' value="'+el.z+'"></div></div>'+
+        '<div class="pair"><div><div class="lab">gravity '+tip('Directional anchor for rendering. SOUTH anchors the text to its bottom edge and grows upward from a fixed baseline.')+'</div><div class="sel"><select class="inp" '+g('gravity')+'><option'+(el.gravity==='SOUTH'?' selected':'')+'>SOUTH</option><option'+(el.gravity==='NORTH'?' selected':'')+'>NORTH</option><option'+(el.gravity==='CENTER'?' selected':'')+'>CENTER</option></select></div></div>'+
+          '<div><div class="lab">clean_level '+tip('Edge cleanup applied to the rendered glyph — higher values trim stray anti-aliased pixels around the art. Most teams leave this at the default.')+'</div><input class="inp" '+g('clean')+' value="'+el.clean+'"></div></div>'+
+        arcBlock+'</div>'+
     '</div></div>';
 }
 function cSpec(){
-  if(PRODUCT.config==='roster') return specAccordion('ROSTER');
-  return specAccordion('LEAGUE')+specAccordion('CUP')+specAccordion('WSL');
+  var els=curEls().map(elementCard).join('') || '<div class="cfg-empty">No elements yet. Add an element to place a name, number, or badge on the selected image.</div>';
+  var main='<div class="cfg-wrap">'+mediaSelector()+
+    '<div class="cfg-els-h">Elements <span class="lab-sub">added to the selected image</span></div>'+
+    '<div class="cfg-els">'+els+'</div>'+
+    '<button class="btn addel-btn" id="addEl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M12 5v14M5 12h14"/></svg>Add Element</button>'+
+  '</div>';
+  return '<div class="spec-wrap"><div class="spec-main">'+main+'</div>'+cfgPreview()+'</div>';
 }
 function cSetup(){
   return cFont()+cSpec();
@@ -1280,16 +1386,18 @@ function bodyFor(step){ return step==='setup'?cSetup():''; }
 function footHTML(){
   if(!state.saved){
     return '<div class="right"><button class="btn" data-close>Cancel</button>'+
-      '<button class="btn primary" id="saveBtn">Verify configuration</button></div>';
+      '<button class="btn primary" id="saveBtn">Save</button></div>';
   }
   var closeLbl=state.dirty?'Cancel':'Close';
   return '<div class="right"><button class="btn" data-close>'+closeLbl+'</button>'+
-    '<button class="btn primary" id="saveBtn"'+(state.dirty?'':' disabled')+'>Save configuration</button></div>';
+    '<button class="btn primary" id="saveBtn"'+(state.dirty?'':' disabled')+'>Save</button></div>';
 }
 
 function renderA(){
   document.getElementById('stepperA').style.display='none';
-  document.getElementById('bodyA').innerHTML=bodyFor(state.step);
+  var b=document.getElementById('bodyA'); var sc=b?b.scrollTop:0;
+  b.innerHTML=bodyFor(state.step);
+  b.scrollTop=sc;
   document.getElementById('footA').innerHTML=footHTML();
 }
 function render(){
@@ -1298,7 +1406,9 @@ function render(){
   if(state.open) renderA();
   if(document.getElementById('pageProduct').style.display!=='none') renderProductTab();
 }
-function openConfigurator(){ state.open=true; state.step='setup'; state.dirty=false; render(); }
+function openConfigurator(){ state.open=true; state.step='setup'; state.dirty=false;
+  state.cfgStyle=cfgStyles()[0][0]; state.cfgByStyle={}; state.cfgFontOpen=null;
+  render(); }
 function markDirty(e){
   if(!state.open||state.dirty) return;
   if(!e.target.closest || !e.target.closest('#bodyA')) return;
@@ -1316,7 +1426,14 @@ document.body.addEventListener('change', function(e){
   if(of){ state.optFamily[of.getAttribute('data-optfam')]=e.target.value; renderKeepScroll(); return; }
   var fcb=e.target.closest && e.target.closest('[data-facb]');
   if(fcb){ var pr=fcb.getAttribute('data-facb').split('|'); var arr=state.optSel[pr[0]]||(state.optSel[pr[0]]=[]);
-    var ix=arr.indexOf(pr[1]); if(ix>-1) arr.splice(ix,1); else arr.push(pr[1]); renderKeepScroll(); }
+    var ix=arr.indexOf(pr[1]); if(ix>-1) arr.splice(ix,1); else arr.push(pr[1]); renderKeepScroll(); return; }
+  // configurator element controls
+  if(e.target.id==='cfgMedia'){ curCfg().media=e.target.value; renderA(); return; }
+  var et=e.target.getAttribute&&e.target.getAttribute('data-eltype');
+  if(et!=null){ var ti=+et, elx=curEls()[ti]; if(elx){ elx.type=e.target.value; if(elx.type==='Number'){ elx.arced=false; elx.roster='Number'; elx.fonts=numberPngDefault(); } else { elx.fonts=[]; } } state.cfgFontOpen=null; renderA(); return; }
+  var er=e.target.getAttribute&&e.target.getAttribute('data-elroster'); if(er!=null){ if(curEls()[+er]) curEls()[+er].roster=e.target.value; return; }
+  var ea=e.target.getAttribute&&e.target.getAttribute('data-elarc'); if(ea!=null){ if(curEls()[+ea]) curEls()[+ea].arced=e.target.checked; renderA(); return; }
+  var efs=e.target.getAttribute&&e.target.getAttribute('data-elfld'); if(efs){ var ps=efs.split('|'); if(curEls()[+ps[0]]) curEls()[+ps[0]][ps[1]]=e.target.value; return; }
 });
 /* font-family combobox: filter options + toggle "Create option" as user types */
 document.body.addEventListener('input', function(e){
@@ -1338,6 +1455,10 @@ document.body.addEventListener('input', function(e){
     var sw=e.target.parentElement.querySelector('.fc-sw'); if(sw && v.length===6) sw.style.background='#'+v;
     return;
   }
+  var elab=e.target.getAttribute&&e.target.getAttribute('data-ellabel');
+  if(elab!=null){ var ei=+elab; if(curEls()[ei]) curEls()[ei].label=e.target.value; return; }
+  var efl=e.target.getAttribute&&e.target.getAttribute('data-elfld');
+  if(efl){ var p=efl.split('|'); if(curEls()[+p[0]]) curEls()[+p[0]][p[1]]=e.target.value; return; }
   if(e.target.id!=='libSearch') return;
   var q=e.target.value.trim().toLowerCase(), shown=0, byFam={};
   document.querySelectorAll('#libTable tbody tr[data-famrow]').forEach(function(r){
@@ -1366,6 +1487,15 @@ document.body.addEventListener('click', function(e){
      if(ix>-1) arr.splice(ix,1); else arr.push(pr[2]); renderKeepScroll(); return; }
   if(e.target.closest('[data-msdone]')){ state.faOpen=null; renderKeepScroll(); return; }
   var mo=e.target.closest('[data-msopen]'); if(mo){ var mk=mo.getAttribute('data-msopen'); state.faOpen=state.faOpen===mk?null:mk; renderKeepScroll(); return; }
+  // configurator printing-style tabs
+  var cst=e.target.closest('[data-cfgstyle]'); if(cst){ state.cfgStyle=cst.getAttribute('data-cfgstyle'); state.cfgFontOpen=null; renderA(); return; }
+  // configurator element actions
+  if(e.target.closest('#addEl')){ curEls().push(defaultEl('Text')); state.dirty=true; renderA(); return; }
+  var erm=e.target.closest('[data-elremove]'); if(erm){ curEls().splice(+erm.getAttribute('data-elremove'),1); state.dirty=true; renderA(); return; }
+  var efo=e.target.closest('[data-elfontopen]'); if(efo){ var oi=+efo.getAttribute('data-elfontopen'); state.cfgFontOpen=state.cfgFontOpen===oi?null:oi; renderA(); return; }
+  var efn=e.target.closest('[data-elfont]'); if(efn){ var fp=efn.getAttribute('data-elfont').split('|'); var fa=curEls()[+fp[0]].fonts; var fx=fa.indexOf(fp[1]); if(fx>-1) fa.splice(fx,1); else fa.push(fp[1]); state.dirty=true; renderA(); return; }
+  var efr=e.target.closest('[data-elfontrm]'); if(efr){ var rp=efr.getAttribute('data-elfontrm').split('|'); var ra=curEls()[+rp[0]].fonts; var rx=ra.indexOf(rp[1]); if(rx>-1) ra.splice(rx,1); state.dirty=true; renderA(); return; }
+  if(e.target.closest('[data-elfontdone]')){ state.cfgFontOpen=null; renderA(); return; }
   if(e.target.closest('#libCreate')){ state.drawer={type:'upload'}; state.upType='font'; state.upNewFam=false; renderAssembly(); return; }
   var eas=e.target.closest('[data-editasset]'); if(eas){ state.drawer={type:'edit',ai:+eas.getAttribute('data-editasset')}; renderAssembly(); return; }
   if(e.target.id==='editSave'){ var ea=ASSET_LIB[state.drawer.ai]; var nm=(document.getElementById('editName')||{}).value; if(nm) ea.name=nm; var ez=document.getElementById('editZ'); if(ez) ea.z=ez.value||'1'; state.drawer=null; renderAssembly(); return; }
