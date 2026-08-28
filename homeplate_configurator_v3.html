@@ -596,6 +596,25 @@
   .fcard-rm:hover{color:#c0392b}
   .fcard-add{border:1px dashed var(--line);background:#f9fafd;border-radius:9px;padding:8px 14px;font-size:13px;color:#2f5fb0;cursor:pointer;font-weight:600}
   .fcard-add:hover{border-color:#b9c4ef;background:#f4f6fb}
+  /* selected-font rows with per-font hex */
+  .frows{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+  .frow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 10px}
+  .frow .fsw{width:18px;height:18px;border-radius:4px;flex:0 0 auto;margin-right:0}
+  .frow-t{line-height:1.15;min-width:0}
+  .frow-t .fcard-nm{font-size:13px;color:#2a3140;font-weight:600}
+  .frow-t .fcard-id{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frow-sp{flex:1}
+  .frow-hex{display:flex;align-items:center;gap:6px;margin-left:auto}
+  .hex-lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .hex-wrap{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:7px;padding:3px 8px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#3a4150;background:#fbfcfe}
+  .hex-wrap:focus-within{border-color:#2f5fb0;box-shadow:0 0 0 2px rgba(47,95,176,.12)}
+  .hex-in{border:0;outline:0;width:66px;background:transparent;font:inherit;color:#1d2340;text-transform:lowercase;margin-left:2px}
+  .frow-empty{font-size:12.5px;color:var(--muted);padding:2px 2px 4px}
+  /* rotation slider */
+  .rng{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:4px;background:linear-gradient(90deg,#c9d4ef,#2f5fb0);outline:none;margin:12px 0 4px;cursor:pointer}
+  .rng::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #2f5fb0;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer}
+  .rng::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #2f5fb0;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer}
+  .rot-val{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#2f5fb0;font-weight:600;background:#eef2fb;border-radius:4px;padding:0 6px;margin-left:4px}
   .spec-preview{flex:0 0 240px;position:sticky;top:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
   .pv-t{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:left;margin-bottom:10px}
   .pv-art{background:#f4f6fb;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;justify-content:center}
@@ -761,13 +780,13 @@ function jersey(num,w){ w=w||240; return '<svg width="'+w+'" height="'+w+'" view
   '<text x="120" y="92" font-size="13" font-weight="800" fill="#f5c542" text-anchor="middle" font-family="Arial">CHELSEA</text>'+
   '<text x="120" y="160" font-size="60" font-weight="800" fill="#f5c542" text-anchor="middle" font-family="Arial">'+num+'</text>'+
 '</svg>'; }
-function jerseyNN(name,num,w){ w=w||240; return '<svg width="'+w+'" height="'+w+'" viewBox="0 0 240 240">'+
+function jerseyNN(name,num,w,fill){ w=w||240; fill=fill||'#fff3cd'; return '<svg width="'+w+'" height="'+w+'" viewBox="0 0 240 240">'+
   '<defs><linearGradient id="bgnn'+w+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2746b0"/><stop offset="1" stop-color="#16277a"/></linearGradient></defs>'+
   '<path d="M76 34 L60 30 L34 52 L52 74 L66 64 L66 206 Q120 218 174 206 L174 64 L188 74 L206 52 L180 30 L164 34 Q120 60 76 34 Z" fill="url(#bgnn'+w+')" stroke="#0e1c54" stroke-width="2"/>'+
   '<path d="M76 34 Q120 60 164 34 L156 50 Q120 70 84 50 Z" fill="#f5c542"/>'+
   '<path id="arc'+w+'" d="M70 96 Q120 78 170 96" fill="none"/>'+
-  '<text font-size="15" font-weight="800" fill="#fff3cd" letter-spacing="1" font-family="Arial"><textPath href="#arc'+w+'" startOffset="50%" text-anchor="middle">'+name+'</textPath></text>'+
-  '<text x="120" y="168" font-size="58" font-weight="800" fill="#fff3cd" text-anchor="middle" font-family="Arial" stroke="#7a5b00" stroke-width="0.6">'+num+'</text>'+
+  '<text font-size="15" font-weight="800" fill="'+fill+'" letter-spacing="1" font-family="Arial"><textPath href="#arc'+w+'" startOffset="50%" text-anchor="middle">'+name+'</textPath></text>'+
+  '<text x="120" y="168" font-size="58" font-weight="800" fill="'+fill+'" text-anchor="middle" font-family="Arial" stroke="#7a5b00" stroke-width="0.6">'+num+'</text>'+
 '</svg>'; }
 function jerseyRed(num,w){ w=w||240; return '<svg width="'+w+'" height="'+w+'" viewBox="0 0 240 240">'+
   '<defs><linearGradient id="bgr'+w+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b2265"/><stop offset="1" stop-color="#07173f"/></linearGradient></defs>'+
@@ -1288,11 +1307,30 @@ function availFonts(){ var fams=productFamilies(); return ASSET_LIB.filter(funct
 function availDigits(){ var fams=productFamilies(); return ASSET_LIB.filter(function(a){return a.type==='PNG' && fams.indexOf(a.family)>-1;}); }
 function numberPngDefault(){ var d=availDigits(); return d.length?[d[0].name]:['Number-PNG']; }
 function defaultEl(type){ type=type||'Text';
-  return {label:'',type:type,roster:type==='Number'?'Number':'Name',fonts:type==='Number'?numberPngDefault():[],x:'1000',y:'437',height:'72',rotation:'0',gravity:'SOUTH',z:'1',clean:'0.9',arced:false,arc:'820'}; }
+  return {label:'',type:type,roster:type==='Number'?'Number':'Name',fonts:type==='Number'?numberPngDefault():[],hex:{},x:'1000',y:'437',height:'72',rotation:'0',gravity:'SOUTH',z:'1',clean:'0.9',arced:false,arc:'820'}; }
+function elHex(el,n){ return (el.hex && el.hex[n]!=null) ? el.hex[n] : hexOf(n); }
 /* printing styles — per-style config */
-function cfgStyles(){ return PRODUCT.config==='roster'?[['ROSTER','Roster']]:[['LEAGUE','League'],['CUP','Cup'],['WSL',"Women's (WSL)"]]; }
-function curCfg(){ var st=state.cfgStyle; if(!state.cfgByStyle[st]) state.cfgByStyle[st]={media:CUSTOM_MEDIA[0].id,els:[defaultEl('Text')]}; return state.cfgByStyle[st]; }
+function cfgStyles(){ return PRODUCT.config==='roster'?[['ROSTER','Roster']]:[['LEAGUE','EPL'],['CUP','Cup'],['WSL','WSL']]; }
+function seedEls(st){
+  if(st==='CUP'){ var c=defaultEl('Text'); c.label='Back name'; c.fonts=['Cup-Block']; return [c]; }
+  if(st==='WSL'){ var w=defaultEl('Text'); w.label='Back name'; w.fonts=['Serif'];
+    var wn=defaultEl('Number'); wn.label='Back number'; wn.fonts=(availDigits().filter(function(a){return a.family==="Women's Super League";})[0]?[availDigits().filter(function(a){return a.family==="Women's Super League";})[0].name]:numberPngDefault()); return [w,wn]; }
+  if(st==='ROSTER'){ return [defaultEl('Text')]; }
+  // LEAGUE / EPL
+  var t=defaultEl('Text'); t.label='Back name'; t.fonts=['Roster-Block','Stroke-Fill'];
+  var d=defaultEl('Number'); d.label='Back number'; return [t,d];
+}
+function curCfg(){ var st=state.cfgStyle; if(!state.cfgByStyle[st]) state.cfgByStyle[st]={media:CUSTOM_MEDIA[0].id,els:seedEls(st)}; return state.cfgByStyle[st]; }
 function curEls(){ return curCfg().els; }
+function styleSelector(){
+  var styles=cfgStyles();
+  if(styles.length<2) return '';
+  return '<div class="cfg-media"><label class="ff-lbl">Printing style '+tip('Fonts, elements &amp; anchor setup differ by printing style. Each style is configured independently; switching styles swaps the elements and preview below.')+'</label>'+
+    '<div class="sel" style="max-width:440px"><select class="inp" id="cfgStyleSel">'+
+      styles.map(function(s){return '<option value="'+s[0]+'"'+(s[0]===state.cfgStyle?' selected':'')+'>'+s[1]+'</option>';}).join('')+
+    '</select></div></div>';
+}
+function styleLabelOf(k){ var m=cfgStyles().filter(function(s){return s[0]===k;})[0]; return m?m[1]:k; }
 function styleTabs(){
   var styles=cfgStyles();
   return '<div class="cfg-styletabs"><span class="cst-lbl">Printing style '+tip('Fonts &amp; anchor setup differ by printing style. Configure each style separately; shared fonts reuse the same anchor points.')+'</span>'+
@@ -1312,35 +1350,51 @@ function elFontField(el,i){
   var tipTxt=isNum
     ? 'Number elements render from a digit-image directory (PNG), not a text font. The product’s Number image is selected by default.'
     : 'Only fonts from the font families selected on the option page are shown — not the full library.';
-  var cards=sel.map(function(n){
-    if(isNum) return '<div class="fcard"><span class="fsw dsw">#</span>'+
-      '<div class="fcard-t"><div class="fcard-nm">'+n+'</div><div class="fcard-id">digit image</div></div>'+
-      '<span class="fcard-rm" data-elfontrm="'+i+'|'+n+'" title="Remove">&times;</span></div>';
-    return '<div class="fcard"><span class="fsw" style="background:#'+hexOf(n)+'"></span>'+
-      '<div class="fcard-t"><div class="fcard-nm">'+n+'</div><div class="fcard-id">fontId '+fontIdOf(n)+'</div></div>'+
+  var rows;
+  if(isNum){
+    rows=sel.map(function(n){return '<div class="frow"><span class="fsw dsw">#</span>'+
+      '<div class="frow-t"><div class="fcard-nm">'+n+'</div><div class="fcard-id">digit image</div></div>'+
+      '<span class="frow-sp"></span><span class="fcard-rm" data-elfontrm="'+i+'|'+n+'" title="Remove">&times;</span></div>';}).join('');
+  } else {
+    rows=sel.map(function(n){var hv=elHex(el,n);
+      return '<div class="frow"><span class="fsw" style="background:#'+hv+'"></span>'+
+      '<div class="frow-t"><div class="fcard-nm">'+n+'</div></div>'+
+      '<label class="frow-hex"><span class="hex-lab">hex</span><span class="hex-wrap">#<input class="hex-in" data-elhex="'+i+'|'+n+'" value="'+hv+'" maxlength="6" spellcheck="false"></span></label>'+
       '<span class="fcard-rm" data-elfontrm="'+i+'|'+n+'" title="Remove">&times;</span></div>';}).join('');
-  var addLbl=sel.length?'▾ Change':(isNum?'+ Select number image':'+ Select fonts');
+  }
+  var addLbl=sel.length?(isNum?'Change number image':'+ Add / change fonts'):(isNum?'+ Select number image':'+ Select fonts');
   var addBtn='<button class="fcard-add" data-elfontopen="'+i+'">'+addLbl+'</button>';
   var menu='';
   if(open){
     var opts=pool.map(function(a){var on=sel.indexOf(a.name)>-1;
       var meta=isNum
         ? '<span class="fsw dsw">#</span>'+a.name+' <span class="fid">'+a.family+'</span>'
-        : '<span class="fsw" style="background:#'+hexOf(a.name)+'"></span>'+a.name+' <span class="fid">fontId '+fontIdOf(a.name)+'</span>';
+        : '<span class="fsw" style="background:#'+hexOf(a.name)+'"></span>'+a.name;
       return '<div class="ms-opt'+(on?' on':'')+'" data-elfont="'+i+'|'+a.name+'"><span class="ms-box">'+(on?'✓':'')+'</span>'+meta+'</div>';}).join('');
-    var foot=isNum?'digit-image directories from the selected option families':'pre-filtered to selected option families';
+    var foot=isNum?'digit-image directories from the selected option families':'';
     menu='<div class="ms-menu">'+opts+'<div class="ms-mfoot"><span>'+foot+'</span><button class="btn sm" data-elfontdone>Done</button></div></div>';
   }
-  return '<div class="ms'+(open?' open':'')+'"><div class="ms-lbl">'+lbl+' '+tip(tipTxt)+'</div>'+
-    '<div class="fcards">'+cards+addBtn+'</div>'+menu+'</div>';
+  var emptyHint=(!sel.length&&!isNum)?'<div class="frow-empty">No fonts selected yet.</div>':'';
+  return '<div class="ms'+(open?' open':'')+'"><div class="ms-lbl">'+lbl+' '+tip(tipTxt)+(isNum?'':' <span class="lab-sub" style="font-weight:400">set a fill hex per font</span>')+'</div>'+
+    '<div class="frows">'+rows+emptyHint+'</div>'+addBtn+menu+'</div>';
 }
 function cfgPreview(){
-  return '<aside class="spec-preview"><div class="pv-t">Preview</div>'+
-    '<div class="ref" style="text-transform:none;letter-spacing:normal;margin:-6px 0 10px">reference canvas 2000×2000</div>'+
-    '<div class="pv-art">'+jerseyNN('YOUR NAME','00',200)+'</div>'+
-    '<div class="pv-rows"><div class="pv-row"><span>Name</span><input class="inp" value="Your Name" placeholder="Your Name"></div>'+
-      '<div class="pv-row"><span>Number</span><input class="inp" value="00" placeholder="00"></div></div>'+
-    '<div class="pv-note">Static reference preview of how name &amp; number render on the selected image.</div></aside>';
+  var lbl=styleLabelOf(state.cfgStyle);
+  var els=curEls();
+  var hasNum=els.some(function(e){return e.type==='Number';});
+  var hasName=els.some(function(e){return e.type==='Text';});
+  // sample fill hex from the first text element's first font for a style-aware swatch
+  var te=els.filter(function(e){return e.type==='Text';})[0];
+  var fill=(te&&te.fonts&&te.fonts[0])?('#'+elHex(te,te.fonts[0])):'#1d2340';
+  var rows='';
+  if(hasName) rows+='<div class="pv-row"><span>Name</span><input class="inp" value="Your Name" placeholder="Your Name"></div>';
+  if(hasNum) rows+='<div class="pv-row"><span>Number</span><input class="inp" value="00" placeholder="00"></div>';
+  if(!rows) rows='<div class="pv-row"><span class="lab-sub">No elements yet</span></div>';
+  return '<aside class="spec-preview"><div class="pv-t">Preview · '+lbl+'</div>'+
+    '<div class="ref" style="text-transform:none;letter-spacing:normal;margin:-6px 0 10px">reference canvas 2000×2000 · '+lbl+'</div>'+
+    '<div class="pv-art">'+jerseyNN(hasName?'YOUR NAME':'',hasNum?'00':'',200,fill)+'</div>'+
+    '<div class="pv-rows">'+rows+'</div>'+
+    '<div class="pv-note">Preview for the <b>'+lbl+'</b> printing style — reflects the elements configured above.</div></aside>';
 }
 function elementCard(el,i){
   var isNum=el.type==='Number';
@@ -1351,7 +1405,6 @@ function elementCard(el,i){
   return '<div class="elcard cfg-el">'+
     '<div class="cfg-el-hd">'+
       '<div class="ef"><div class="lab">Element type</div><div class="sel"><select class="inp" data-eltype="'+i+'"><option'+(el.type==='Text'?' selected':'')+'>Text</option><option'+(isNum?' selected':'')+'>Number</option></select></div></div>'+
-      '<div class="ef"><div class="lab">Roster type '+tip('Backend (PDS) classification used for sorting &amp; structure — not surfaced to shoppers. Kept for backend compatibility.')+'</div><div class="sel"><select class="inp" data-elroster="'+i+'"><option'+(el.roster==='Name'?' selected':'')+'>Name</option><option'+(el.roster==='Number'?' selected':'')+'>Number</option></select></div></div>'+
       '<div class="ef ef-grow"><div class="lab">Label <span class="lab-sub">optional · admin only</span></div><input class="inp" data-ellabel="'+i+'" value="'+(el.label||'')+'" placeholder="e.g. back name, sleeve"></div>'+
       '<button class="el-rm" data-elremove="'+i+'" title="Remove element">&times;</button>'+
     '</div>'+
@@ -1362,7 +1415,7 @@ function elementCard(el,i){
       '<div><div class="grp-t">Position &amp; render</div>'+
         '<div class="pair"><div><div class="lab">x</div><input class="inp" '+g('x')+' value="'+el.x+'"></div>'+
           '<div><div class="lab">y</div><input class="inp" '+g('y')+' value="'+el.y+'"></div></div>'+
-        '<div class="pair"><div><div class="lab">rotation</div><input class="inp" '+g('rotation')+' value="'+el.rotation+'"></div>'+
+        '<div class="pair"><div><div class="lab">rotation <span class="rot-val" id="rotval'+i+'">'+el.rotation+'°</span></div><input type="range" min="-180" max="180" step="1" class="rng" '+g('rotation')+' value="'+el.rotation+'"></div>'+
           '<div><div class="lab">z (layer) '+tip('Render/stacking order — a higher z renders on top where elements overlap (e.g. a name sitting above a number).')+'</div><input class="inp" '+g('z')+' value="'+el.z+'"></div></div>'+
         '<div class="pair"><div><div class="lab">gravity '+tip('Directional anchor for rendering. SOUTH anchors the text to its bottom edge and grows upward from a fixed baseline.')+'</div><div class="sel"><select class="inp" '+g('gravity')+'><option'+(el.gravity==='SOUTH'?' selected':'')+'>SOUTH</option><option'+(el.gravity==='NORTH'?' selected':'')+'>NORTH</option><option'+(el.gravity==='CENTER'?' selected':'')+'>CENTER</option></select></div></div>'+
           '<div><div class="lab">clean_level '+tip('Edge cleanup applied to the rendered glyph — higher values trim stray anti-aliased pixels around the art. Most teams leave this at the default.')+'</div><input class="inp" '+g('clean')+' value="'+el.clean+'"></div></div>'+
@@ -1371,8 +1424,8 @@ function elementCard(el,i){
 }
 function cSpec(){
   var els=curEls().map(elementCard).join('') || '<div class="cfg-empty">No elements yet. Add an element to place a name, number, or badge on the selected image.</div>';
-  var main='<div class="cfg-wrap">'+mediaSelector()+
-    '<div class="cfg-els-h">Elements <span class="lab-sub">added to the selected image</span></div>'+
+  var main='<div class="cfg-wrap">'+mediaSelector()+styleSelector()+
+    '<div class="cfg-els-h">Elements <span class="lab-sub">for the '+styleLabelOf(state.cfgStyle)+' printing style</span></div>'+
     '<div class="cfg-els">'+els+'</div>'+
     '<button class="btn addel-btn" id="addEl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M12 5v14M5 12h14"/></svg>Add Element</button>'+
   '</div>';
@@ -1428,6 +1481,7 @@ document.body.addEventListener('change', function(e){
   if(fcb){ var pr=fcb.getAttribute('data-facb').split('|'); var arr=state.optSel[pr[0]]||(state.optSel[pr[0]]=[]);
     var ix=arr.indexOf(pr[1]); if(ix>-1) arr.splice(ix,1); else arr.push(pr[1]); renderKeepScroll(); return; }
   // configurator element controls
+  if(e.target.id==='cfgStyleSel'){ state.cfgStyle=e.target.value; state.cfgFontOpen=null; renderA(); return; }
   if(e.target.id==='cfgMedia'){ curCfg().media=e.target.value; renderA(); return; }
   var et=e.target.getAttribute&&e.target.getAttribute('data-eltype');
   if(et!=null){ var ti=+et, elx=curEls()[ti]; if(elx){ elx.type=e.target.value; if(elx.type==='Number'){ elx.arced=false; elx.roster='Number'; elx.fonts=numberPngDefault(); } else { elx.fonts=[]; } } state.cfgFontOpen=null; renderA(); return; }
@@ -1455,10 +1509,20 @@ document.body.addEventListener('input', function(e){
     var sw=e.target.parentElement.querySelector('.fc-sw'); if(sw && v.length===6) sw.style.background='#'+v;
     return;
   }
+  var ehx=e.target.getAttribute&&e.target.getAttribute('data-elhex');
+  if(ehx){ var hp=ehx.split('|'); var hv=e.target.value.replace(/[^0-9a-fA-F]/g,'').slice(0,6);
+    if(hv!==e.target.value) e.target.value=hv;
+    var hel=curEls()[+hp[0]]; if(hel){ hel.hex=hel.hex||{}; hel.hex[hp[1]]=hv; }
+    var frow=e.target.closest('.frow'); var fsw=frow&&frow.querySelector('.fsw');
+    if(fsw && hv.length===6) fsw.style.background='#'+hv;
+    return;
+  }
   var elab=e.target.getAttribute&&e.target.getAttribute('data-ellabel');
   if(elab!=null){ var ei=+elab; if(curEls()[ei]) curEls()[ei].label=e.target.value; return; }
   var efl=e.target.getAttribute&&e.target.getAttribute('data-elfld');
-  if(efl){ var p=efl.split('|'); if(curEls()[+p[0]]) curEls()[+p[0]][p[1]]=e.target.value; return; }
+  if(efl){ var p=efl.split('|'); if(curEls()[+p[0]]) curEls()[+p[0]][p[1]]=e.target.value;
+    if(p[1]==='rotation'){ var rv=document.getElementById('rotval'+p[0]); if(rv) rv.textContent=e.target.value+'°'; }
+    return; }
   if(e.target.id!=='libSearch') return;
   var q=e.target.value.trim().toLowerCase(), shown=0, byFam={};
   document.querySelectorAll('#libTable tbody tr[data-famrow]').forEach(function(r){
