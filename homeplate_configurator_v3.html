@@ -575,6 +575,9 @@
   .el-rm:hover{color:#c0392b;border-color:#e6b0a8}
   .arc-tog2{display:flex;align-items:center;gap:7px;font-size:13px;color:#3a4150;padding-top:22px}
   .addel-btn{margin-top:16px}
+  .elcard-foot{display:flex;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+  .btn.sm{padding:7px 18px;font-size:13px}
+  .btn.primary.saved-ok{background:#1f9d55;border-color:#1f9d55}
   .cfg-empty{border:1px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--muted);font-size:13.5px}
   .ms .fsw{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.15);vertical-align:-2px;margin-right:6px}
   .ms .fid{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;margin-left:6px}
@@ -1310,12 +1313,12 @@ function defaultEl(type){ type=type||'Text';
   return {label:'',type:type,roster:type==='Number'?'Number':'Name',fonts:type==='Number'?numberPngDefault():[],hex:{},x:'1000',y:'437',height:'72',rotation:'0',gravity:'SOUTH',z:'1',clean:'0.9',arced:false,arc:'820'}; }
 function elHex(el,n){ return (el.hex && el.hex[n]!=null) ? el.hex[n] : hexOf(n); }
 /* printing styles — per-style config */
-function cfgStyles(){ return PRODUCT.config==='roster'?[['ROSTER','Roster']]:[['LEAGUE','EPL'],['CUP','Cup'],['WSL','WSL']]; }
+function cfgStyles(){ return PRODUCT.config==='roster'?[['NA','- ']]:[['LEAGUE','EPL'],['CUP','Cup'],['WSL','WSL']]; }
 function seedEls(st){
   if(st==='CUP'){ var c=defaultEl('Text'); c.label='Back name'; c.fonts=['Cup-Block']; return [c]; }
   if(st==='WSL'){ var w=defaultEl('Text'); w.label='Back name'; w.fonts=['Serif'];
     var wn=defaultEl('Number'); wn.label='Back number'; wn.fonts=(availDigits().filter(function(a){return a.family==="Women's Super League";})[0]?[availDigits().filter(function(a){return a.family==="Women's Super League";})[0].name]:numberPngDefault()); return [w,wn]; }
-  if(st==='ROSTER'){ return [defaultEl('Text')]; }
+  if(st==='NA'){ var na=defaultEl('Text'); na.label='Back name'; return [na]; }
   // LEAGUE / EPL
   var t=defaultEl('Text'); t.label='Back name'; t.fonts=['Roster-Block','Stroke-Fill'];
   var d=defaultEl('Number'); d.label='Back number'; return [t,d];
@@ -1324,7 +1327,7 @@ function curCfg(){ var st=state.cfgStyle; if(!state.cfgByStyle[st]) state.cfgByS
 function curEls(){ return curCfg().els; }
 function styleSelector(){
   var styles=cfgStyles();
-  if(styles.length<2) return '';
+  if(styles.length<2 && PRODUCT.config!=='roster') return '';
   return '<div class="cfg-media"><label class="ff-lbl">Printing style '+tip('Fonts, elements &amp; anchor setup differ by printing style. Each style is configured independently; switching styles swaps the elements and preview below.')+'</label>'+
     '<div class="sel" style="max-width:440px"><select class="inp" id="cfgStyleSel">'+
       styles.map(function(s){return '<option value="'+s[0]+'"'+(s[0]===state.cfgStyle?' selected':'')+'>'+s[1]+'</option>';}).join('')+
@@ -1405,7 +1408,7 @@ function elementCard(el,i){
   return '<div class="elcard cfg-el">'+
     '<div class="cfg-el-hd">'+
       '<div class="ef"><div class="lab">Element type</div><div class="sel"><select class="inp" data-eltype="'+i+'"><option'+(el.type==='Text'?' selected':'')+'>Text</option><option'+(isNum?' selected':'')+'>Number</option></select></div></div>'+
-      '<div class="ef ef-grow"><div class="lab">Label <span class="lab-sub">optional · admin only</span></div><input class="inp" data-ellabel="'+i+'" value="'+(el.label||'')+'" placeholder="e.g. back name, sleeve"></div>'+
+      '<div class="ef ef-grow"><div class="lab">Label</div><input class="inp" data-ellabel="'+i+'" value="'+(el.label||'')+'" placeholder="e.g. back name, sleeve"></div>'+
       '<button class="el-rm" data-elremove="'+i+'" title="Remove element">&times;</button>'+
     '</div>'+
     '<div class="two">'+
@@ -1420,7 +1423,9 @@ function elementCard(el,i){
         '<div class="pair"><div><div class="lab">gravity '+tip('Directional anchor for rendering. SOUTH anchors the text to its bottom edge and grows upward from a fixed baseline.')+'</div><div class="sel"><select class="inp" '+g('gravity')+'><option'+(el.gravity==='SOUTH'?' selected':'')+'>SOUTH</option><option'+(el.gravity==='NORTH'?' selected':'')+'>NORTH</option><option'+(el.gravity==='CENTER'?' selected':'')+'>CENTER</option></select></div></div>'+
           '<div><div class="lab">clean_level '+tip('Edge cleanup applied to the rendered glyph — higher values trim stray anti-aliased pixels around the art. Most teams leave this at the default.')+'</div><input class="inp" '+g('clean')+' value="'+el.clean+'"></div></div>'+
         arcBlock+'</div>'+
-    '</div></div>';
+    '</div>'+
+    '<div class="elcard-foot"><button class="btn primary sm" data-elsave="'+i+'">Save</button></div>'+
+    '</div>';
 }
 function cSpec(){
   var els=curEls().map(elementCard).join('') || '<div class="cfg-empty">No elements yet. Add an element to place a name, number, or badge on the selected image.</div>';
@@ -1437,13 +1442,7 @@ function cSetup(){
 function bodyFor(step){ return step==='setup'?cSetup():''; }
 
 function footHTML(){
-  if(!state.saved){
-    return '<div class="right"><button class="btn" data-close>Cancel</button>'+
-      '<button class="btn primary" id="saveBtn">Save</button></div>';
-  }
-  var closeLbl=state.dirty?'Cancel':'Close';
-  return '<div class="right"><button class="btn" data-close>'+closeLbl+'</button>'+
-    '<button class="btn primary" id="saveBtn"'+(state.dirty?'':' disabled')+'>Save</button></div>';
+  return '<div class="right"><button class="btn primary" id="saveBtn">Save</button></div>';
 }
 
 function renderA(){
@@ -1553,6 +1552,9 @@ document.body.addEventListener('click', function(e){
   var mo=e.target.closest('[data-msopen]'); if(mo){ var mk=mo.getAttribute('data-msopen'); state.faOpen=state.faOpen===mk?null:mk; renderKeepScroll(); return; }
   // configurator printing-style tabs
   var cst=e.target.closest('[data-cfgstyle]'); if(cst){ state.cfgStyle=cst.getAttribute('data-cfgstyle'); state.cfgFontOpen=null; renderA(); return; }
+  // per-element Save (transient confirmation)
+  var es=e.target.closest('[data-elsave]'); if(es){ es.textContent='Saved ✓'; es.classList.add('saved-ok'); es.disabled=true;
+    setTimeout(function(){ es.textContent='Save'; es.classList.remove('saved-ok'); es.disabled=false; },1400); return; }
   // configurator element actions
   if(e.target.closest('#addEl')){ curEls().push(defaultEl('Text')); state.dirty=true; renderA(); return; }
   var erm=e.target.closest('[data-elremove]'); if(erm){ curEls().splice(+erm.getAttribute('data-elremove'),1); state.dirty=true; renderA(); return; }
